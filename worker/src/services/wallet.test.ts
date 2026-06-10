@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { Miniflare } from 'miniflare';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { credit, debit, getBalance, InsufficientFundsError, DuplicateTransactionError } from './wallet.js';
+import { credit, debit, getBalance, settleRound, InsufficientFundsError, DuplicateTransactionError } from './wallet.js';
 
 let mf: Miniflare;
 let db: D1Database;
@@ -143,5 +143,77 @@ describe('wallet service', () => {
       expect(finalBalance).toBeGreaterThanOrEqual(0);
       expect(finalBalance).toBe(1000 - succeeded.length * 300);
     });
+  });
+});
+
+describe('settleRound (atomic round)', () => {
+  it('debits stake and credits payout in one transaction', async () => {
+    await seedWallet('u1', 'w1', 1000);
+    const res = await settleRound(db, {
+      walletId: 'w1',
+      stake: 100,
+      payout: 198,
+      stakeRefKey: 'r1:stake',
+      payoutRefKey: 'r1:payout',
+    });
+    expect(res.balanceBefore).toBe(1000);
+    expect(res.balanceAfter).toBe(1098);
+
+    const entries = await db
+      .prepare('SELECT amount FROM ledger_entries WHERE wallet_id = ?')
+      .bind('w1')
+      .all();
+    const amounts = entries.results.map((e) => e.amount as number).sort((a, b) => a - b);
+    expect(amounts).toEqual([-100, 198]);
+    expect(await getBalance(db, 'w1')).toBe(1098);
+  });
+
+  it('records a single ledger entry when payout is zero', async () => {
+    await seedWallet('u1', 'w1', 1000);
+    const res = await settleRound(db, {
+      walletId: 'w1',
+      stake: 100,
+      payout: 0,
+      stakeRefKey: 'r2:stake',
+      payoutRefKey: 'r2:payout',
+    });
+    expect(res.balanceAfter).toBe(900);
+    const entries = await db.prepare('SELECT amount FROM ledger_entries WHERE wallet_id = ?').bind('w1').all();
+    expect(entries.results).toHaveLength(1);
+  });
+
+  it('rejects when stake exceeds balance and writes nothing', async () => {
+    await seedWallet('u1', 'w1', 50);
+    await expect(
+      settleRound(db, { walletId: 'w1', stake: 100, payout: 198, stakeRefKey: 'r3:stake', payoutRefKey: 'r3:payout' }),
+    ).rejects.toThrow(InsufficientFundsError);
+    expect(await getBalance(db, 'w1')).toBe(50);
+    const entries = await db.prepare('SELECT id FROM ledger_entries WHERE wallet_id = ?').bind('w1').all();
+    expect(entries.results).toHaveLength(0);
+  });
+
+  it('rolls back the whole round if an extra statement fails', async () => {
+    await seedWallet('u1', 'w1', 1000);
+    const badStmt = db
+      .prepare('INSERT INTO users (id, tg_id, username) VALUES (?, ?, ?)')
+      .bind('u1', 999111, 'dup');
+    await expect(
+      settleRound(
+        db,
+        { walletId: 'w1', stake: 100, payout: 198, stakeRefKey: 'r4:stake', payoutRefKey: 'r4:payout' },
+        [badStmt],
+      ),
+    ).rejects.toBeTruthy();
+    expect(await getBalance(db, 'w1')).toBe(1000);
+    const entries = await db.prepare('SELECT id FROM ledger_entries WHERE wallet_id = ?').bind('w1').all();
+    expect(entries.results).toHaveLength(0);
+  });
+
+  it('is idempotent on the stake ref key', async () => {
+    await seedWallet('u1', 'w1', 1000);
+    await settleRound(db, { walletId: 'w1', stake: 100, payout: 0, stakeRefKey: 'r5:stake', payoutRefKey: 'r5:payout' });
+    await expect(
+      settleRound(db, { walletId: 'w1', stake: 100, payout: 0, stakeRefKey: 'r5:stake', payoutRefKey: 'r5:payout' }),
+    ).rejects.toThrow(DuplicateTransactionError);
   });
 });
