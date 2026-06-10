@@ -91,5 +91,3 @@ export const diceGame: GameModule<DiceBet, null> = {
     return null;
   },
 };
-
-export const ROLL_RANGE_VALUE = ROLL_RANGE;
