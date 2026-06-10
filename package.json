@@ -9,7 +9,7 @@
     "dev": "npm run dev --workspace=web",
     "dev:worker": "npm run dev --workspace=worker",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint --no-error-on-unmatched-pattern . --ext .ts,.tsx",
     "format": "prettier --check .",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present"
