@@ -33,3 +33,14 @@ export interface AuditEventRow {
   payload: string;
   created_at: string;
 }
+
+export interface ServerSeedRow {
+  id: string;
+  user_id: string;
+  seed: string;
+  seed_hash: string;
+  nonce: number;
+  status: 'active' | 'revealed';
+  created_at: string;
+  revealed_at: string | null;
+}

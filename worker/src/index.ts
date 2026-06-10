@@ -11,6 +11,7 @@ import { verify } from './services/rng.js';
 import { getHistory } from './services/history.js';
 import { getLeaderboard } from './services/leaderboard.js';
 import { claimDailyBonus } from './services/daily-bonus.js';
+import { getCommitment, rotateSeed } from './services/fairness.js';
 import type { FairnessProof } from './services/rng.js';
 
 export interface Env {
@@ -71,9 +72,11 @@ export default {
         const user = await authFromRequest(env.DB, request, env);
         await trackAuth(env.DB, user.id, user.isNewUser, user.tgId);
         const balance = await getBalance(env.DB, user.walletId);
+        const fairness = await getCommitment(env.DB, user.id);
         return json({
           user: { id: user.id, tgId: user.tgId, username: user.username, firstName: user.firstName },
           balance,
+          fairness,
         });
       }
 
@@ -99,6 +102,18 @@ export default {
         const body = await request.json<{ proof: FairnessProof; maxRoll: number }>();
         const valid = await verify(body.proof, body.maxRoll);
         return json({ valid });
+      }
+
+      if (url.pathname === '/api/fairness' && request.method === 'GET') {
+        const user = await authFromRequest(env.DB, request, env);
+        const commitment = await getCommitment(env.DB, user.id);
+        return json({ commitment });
+      }
+
+      if (url.pathname === '/api/fairness/rotate' && request.method === 'POST') {
+        const user = await authFromRequest(env.DB, request, env);
+        const revealed = await rotateSeed(env.DB, user.id);
+        return json({ revealed });
       }
 
       if (url.pathname === '/api/history' && request.method === 'GET') {

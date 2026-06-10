@@ -96,3 +96,24 @@ export async function verify(proof: FairnessProof, maxRoll: number): Promise<boo
 
   return true;
 }
+
+// The per-round proof shown to the player. It deliberately omits the raw server
+// seed: revealing it per round would let the player predict the next round. The
+// raw seed is disclosed only on rotation, after which past rounds can be verified.
+export interface PublicProof {
+  serverSeedHash: string;
+  clientSeeds: string[];
+  nonce: number;
+  combinedHmac: string;
+  roll: number;
+}
+
+export function toPublicProof(p: FairnessProof): PublicProof {
+  return {
+    serverSeedHash: p.serverSeedHash,
+    clientSeeds: p.clientSeeds,
+    nonce: p.nonce,
+    combinedHmac: p.combinedHmac,
+    roll: p.roll,
+  };
+}

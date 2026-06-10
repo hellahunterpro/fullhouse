@@ -1,8 +1,11 @@
 import { getGame } from '../games/registry.js';
-import { generateServerSeed, commit, reveal } from './rng.js';
-import { debit, credit, getBalance } from './wallet.js';
+import { reveal, toPublicProof } from './rng.js';
+import { getBalance, settleRound } from './wallet.js';
+import { getActiveSeedRow, incrementNonceStmt } from './fairness.js';
 import { trackBetPlaced, trackBetResolved, trackBalanceDelta } from './analytics.js';
-import type { FairnessProof } from './rng.js';
+import type { PublicProof } from './rng.js';
+
+const MAX_ROLL = 100;
 
 export interface PlayRequest {
   gameId: string;
@@ -17,7 +20,7 @@ export interface PlayResult {
   outcome: Record<string, unknown>;
   balanceBefore: number;
   balanceAfter: number;
-  proof: FairnessProof;
+  proof: PublicProof;
 }
 
 export async function playRound(db: D1Database, req: PlayRequest): Promise<PlayResult> {
@@ -30,48 +33,61 @@ export async function playRound(db: D1Database, req: PlayRequest): Promise<PlayR
   const validation = game.validateBet(req.bet, player);
   if (!validation.valid) throw new Error(validation.error ?? 'Invalid bet');
 
-  const serverSeed = await generateServerSeed();
-  const commitment = await commit(serverSeed);
+  // Provably-fair: derive the outcome from the seed committed in advance. The seed
+  // is never generated at bet time, so the server cannot pick a favourable result.
+  const seed = await getActiveSeedRow(db, req.userId);
+  const nonce = seed.nonce;
 
-  const nonce = Date.now();
   const rngResult = await reveal(
-    { serverSeed, clientSeeds: [req.clientSeed], nonce },
-    100,
+    { serverSeed: seed.seed, clientSeeds: [req.clientSeed], nonce },
+    MAX_ROLL,
   );
 
   const resolveResult = game.resolve(rngResult.roll, [{ bet: req.bet, player }]);
+  const payout = resolveResult.payouts[0]?.amount ?? 0;
 
   const roundId = `round:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-  const balanceBefore = balance;
 
   await trackBetPlaced(db, req.userId, req.gameId, roundId, req.bet.stake, {
     bet: req.bet,
-    commitment: commitment.serverSeedHash,
+    commitment: seed.seed_hash,
+    nonce,
+    clientSeed: req.clientSeed,
+    hmac: rngResult.proof.combinedHmac,
+    roll: rngResult.roll,
   });
 
-  await debit(db, req.walletId, req.bet.stake, 'bet_stake', {
-    refKey: `${roundId}:debit`,
-    description: `${game.name} bet`,
-  });
-
-  const payout = resolveResult.payouts[0]?.amount ?? 0;
-  if (payout > 0) {
-    await credit(db, req.walletId, payout, 'bet_payout', {
-      refKey: `${roundId}:credit`,
-      description: `${game.name} payout`,
-    });
-  }
-
-  const balanceAfter = await getBalance(db, req.walletId);
+  // Atomic settlement: debit stake + credit payout + advance the seed nonce all in
+  // one transaction. A mid-round failure leaves no partial state.
+  const settlement = await settleRound(
+    db,
+    {
+      walletId: req.walletId,
+      stake: req.bet.stake,
+      payout,
+      stakeRefKey: `${roundId}:stake`,
+      payoutRefKey: `${roundId}:payout`,
+      description: `${game.name} round`,
+    },
+    [incrementNonceStmt(db, seed.id)],
+  );
 
   await trackBetResolved(db, req.userId, req.gameId, roundId, req.bet.stake, payout, resolveResult.outcome);
-  await trackBalanceDelta(db, req.userId, req.walletId, balanceBefore, balanceAfter, `${req.gameId}_round`, roundId);
+  await trackBalanceDelta(
+    db,
+    req.userId,
+    req.walletId,
+    settlement.balanceBefore,
+    settlement.balanceAfter,
+    `${req.gameId}_round`,
+    roundId,
+  );
 
   return {
     roundId,
     outcome: resolveResult.outcome,
-    balanceBefore,
-    balanceAfter,
-    proof: rngResult.proof,
+    balanceBefore: settlement.balanceBefore,
+    balanceAfter: settlement.balanceAfter,
+    proof: toPublicProof(rngResult.proof),
   };
 }

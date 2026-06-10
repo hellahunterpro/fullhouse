@@ -21,9 +21,24 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   return data as T;
 }
 
+export interface Commitment {
+  id: string;
+  seedHash: string;
+  nonce: number;
+}
+
 export interface UserInfo {
   user: { id: string; tgId: number; username: string; firstName: string };
   balance: number;
+  fairness: Commitment;
+}
+
+export interface PublicProof {
+  serverSeedHash: string;
+  clientSeeds: string[];
+  nonce: number;
+  combinedHmac: string;
+  roll: number;
 }
 
 export interface PlayResult {
@@ -31,14 +46,7 @@ export interface PlayResult {
   outcome: Record<string, unknown>;
   balanceBefore: number;
   balanceAfter: number;
-  proof: {
-    serverSeed: string;
-    serverSeedHash: string;
-    clientSeeds: string[];
-    nonce: number;
-    combinedHmac: string;
-    roll: number;
-  };
+  proof: PublicProof;
 }
 
 export interface GameInfo {
@@ -77,6 +85,16 @@ export const fetchGames = () => request<{ games: GameInfo[] }>('/games');
 export const fetchHistory = () => request<{ history: HistoryEntry[] }>('/history');
 export const fetchLeaderboard = () => request<{ leaderboard: LeaderboardEntry[] }>('/leaderboard');
 export const claimDailyBonus = () => request<DailyBonusResult>('/daily-bonus', { method: 'POST' });
+export const fetchFairness = () => request<{ commitment: Commitment }>('/fairness');
+
+export interface RevealedSeed {
+  seed: string;
+  seedHash: string;
+  nonce: number;
+}
+
+export const rotateFairness = () =>
+  request<{ revealed: RevealedSeed }>('/fairness/rotate', { method: 'POST' });
 
 export function play(
   gameId: string,

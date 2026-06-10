@@ -24,11 +24,12 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState<Screen>('lobby');
   const [bonusMsg, setBonusMsg] = useState<string | null>(null);
+  const [commitment, setCommitment] = useState<string | null>(null);
 
   useEffect(() => {
     applyTelegramTheme();
     fetchMe()
-      .then((data) => { setBalance(data.balance); setUsername(data.user.username || data.user.firstName || 'Player'); setLoading(false); })
+      .then((data) => { setBalance(data.balance); setUsername(data.user.username || data.user.firstName || 'Player'); setCommitment(data.fairness.seedHash); setLoading(false); })
       .catch((err) => { setError(err.message); setLoading(false); });
   }, []);
 
@@ -131,6 +132,12 @@ export function App() {
               Leaderboard
             </button>
           </div>
+
+          {commitment && (
+            <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '11px', color: tokens.textSecondary, wordBreak: 'break-all' }}>
+              Provably fair · committed seed {commitment.slice(0, 16)}…
+            </div>
+          )}
         </div>
       )}
 

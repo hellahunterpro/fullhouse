@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { Miniflare } from 'miniflare';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { playRound } from './round.js';
 import { provisionUser } from './auth.js';
 import { getBalance } from './wallet.js';
 import { verify } from './rng.js';
+import { getCommitment, rotateSeed } from './fairness.js';
 import { registerGame, clearRegistry } from '../games/registry.js';
 import { diceGame } from '../games/dice.js';
 
@@ -13,11 +14,14 @@ let mf: Miniflare;
 let db: D1Database;
 
 async function applyMigrations(db: D1Database) {
-  const migration = readFileSync(join(__dirname, '../../migrations/0001_init.sql'), 'utf-8');
-  const noComments = migration.replace(/--[^\n]*/g, '');
-  const stmts = noComments.split(';').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
-  for (const stmt of stmts) {
-    await db.prepare(stmt).run();
+  const dir = join(__dirname, '../../migrations');
+  const files = readdirSync(dir).filter((f: string) => f.endsWith('.sql')).sort();
+  for (const file of files) {
+    const sql = readFileSync(join(dir, file), 'utf-8').replace(/--[^\n]*/g, '');
+    const stmts = sql.split(';').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+    for (const stmt of stmts) {
+      await db.prepare(stmt).run();
+    }
   }
 }
 
@@ -68,7 +72,7 @@ describe('end-to-end round', () => {
     }
   });
 
-  it('fairness proof verifies correctly', async () => {
+  it('per-round proof hides the server seed and verifies after reveal', async () => {
     const user = await provisionUser(db, { id: 88888, username: 'proof_test' });
 
     const result = await playRound(db, {
@@ -79,7 +83,25 @@ describe('end-to-end round', () => {
       walletId: user.walletId,
     });
 
-    const valid = await verify(result.proof, 100);
+    // The per-round proof must not leak the raw server seed.
+    expect((result.proof as Record<string, unknown>).serverSeed).toBeUndefined();
+    expect(result.proof.serverSeedHash).toBeTruthy();
+
+    // Rotating reveals the seed; the revealed seed must match the prior commitment.
+    const revealed = await rotateSeed(db, user.id);
+    expect(revealed.seedHash).toBe(result.proof.serverSeedHash);
+
+    const valid = await verify(
+      {
+        serverSeed: revealed.seed,
+        serverSeedHash: result.proof.serverSeedHash,
+        clientSeeds: result.proof.clientSeeds,
+        nonce: result.proof.nonce,
+        combinedHmac: result.proof.combinedHmac,
+        roll: result.proof.roll,
+      },
+      100,
+    );
     expect(valid).toBe(true);
   });
 
@@ -167,5 +189,51 @@ describe('end-to-end round', () => {
 
     const finalBalance = await getBalance(db, user.walletId);
     expect(finalBalance).toBe(expectedBalance);
+  });
+});
+
+describe('provably-fair seed lifecycle', () => {
+  it('commits the seed before betting and advances the nonce each round', async () => {
+    const user = await provisionUser(db, { id: 33333, username: 'seed_test' });
+
+    const before = await getCommitment(db, user.id);
+    expect(before.seedHash).toBeTruthy();
+    expect(before.nonce).toBe(0);
+
+    const r1 = await playRound(db, {
+      gameId: 'dice',
+      bet: { stake: 100, target: 50, direction: 'under' },
+      clientSeed: 'a',
+      userId: user.id,
+      walletId: user.walletId,
+    });
+    expect(r1.proof.serverSeedHash).toBe(before.seedHash);
+    expect(r1.proof.nonce).toBe(0);
+
+    const afterOne = await getCommitment(db, user.id);
+    expect(afterOne.seedHash).toBe(before.seedHash);
+    expect(afterOne.nonce).toBe(1);
+
+    const r2 = await playRound(db, {
+      gameId: 'dice',
+      bet: { stake: 100, target: 50, direction: 'under' },
+      clientSeed: 'b',
+      userId: user.id,
+      walletId: user.walletId,
+    });
+    expect(r2.proof.nonce).toBe(1);
+    expect((await getCommitment(db, user.id)).nonce).toBe(2);
+  });
+
+  it('rotating reveals the old seed and starts a fresh commitment', async () => {
+    const user = await provisionUser(db, { id: 22222, username: 'rotate_test' });
+    const first = await getCommitment(db, user.id);
+
+    const revealed = await rotateSeed(db, user.id);
+    expect(revealed.seedHash).toBe(first.seedHash);
+
+    const next = await getCommitment(db, user.id);
+    expect(next.seedHash).not.toBe(first.seedHash);
+    expect(next.nonce).toBe(0);
   });
 });
