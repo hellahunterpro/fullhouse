@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { registerGame, getGame, listGames, clearRegistry } from './registry.js';
-import type { GameModule, PlayerContext, BetValidationResult, ResolveResult } from './contract.js';
+import type { GameModule, PlayerContext, BetValidationResult, ResolveResult, RngOutcome } from './contract.js';
 
 interface FakeBet {
   amount: number;
@@ -11,6 +11,7 @@ function createFakeGame(id: string): GameModule<FakeBet, null> {
     id,
     name: `Fake ${id}`,
     runtimeTier: 'house',
+    maxRoll: 100,
     uiComponent: `Fake${id}Screen`,
 
     validateBet(bet: FakeBet, player: PlayerContext): BetValidationResult {
@@ -19,14 +20,14 @@ function createFakeGame(id: string): GameModule<FakeBet, null> {
       return { valid: true };
     },
 
-    resolve(rngRoll: number, bets: Array<{ bet: FakeBet; player: PlayerContext }>): ResolveResult {
+    resolve(rng: RngOutcome, bets: Array<{ bet: FakeBet; player: PlayerContext }>): ResolveResult {
       const payouts = bets.map(({ bet, player }) => ({
         walletId: player.walletId,
-        amount: rngRoll > 50 ? bet.amount * 2 : 0,
+        amount: rng.roll > 50 ? bet.amount * 2 : 0,
       }));
       return {
         payouts,
-        outcome: { roll: rngRoll, win: rngRoll > 50 },
+        outcome: { roll: rng.roll, win: rng.roll > 50 },
       };
     },
 
@@ -77,11 +78,11 @@ describe('game registry', () => {
       error: 'Insufficient balance',
     });
 
-    const winResult = game.resolve(75, [{ bet: { amount: 500 }, player }]);
+    const winResult = game.resolve({ roll: 75, hmacHex: 'ab'.repeat(32) }, [{ bet: { amount: 500 }, player }]);
     expect(winResult.payouts[0].amount).toBe(1000);
     expect(winResult.outcome).toEqual({ roll: 75, win: true });
 
-    const loseResult = game.resolve(30, [{ bet: { amount: 500 }, player }]);
+    const loseResult = game.resolve({ roll: 30, hmacHex: 'ab'.repeat(32) }, [{ bet: { amount: 500 }, player }]);
     expect(loseResult.payouts[0].amount).toBe(0);
     expect(loseResult.outcome).toEqual({ roll: 30, win: false });
   });

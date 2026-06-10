@@ -1,4 +1,4 @@
-import type { GameModule, PlayerContext, BetValidationResult, ResolveResult } from './contract.js';
+import type { GameModule, PlayerContext, BetValidationResult, ResolveResult, RngOutcome } from './contract.js';
 
 export interface CoinflipBet {
   stake: number;
@@ -13,6 +13,7 @@ export const coinflipGame: GameModule<CoinflipBet, null> = {
   id: 'coinflip',
   name: 'Coin Flip',
   runtimeTier: 'house',
+  maxRoll: 2,
   uiComponent: 'CoinflipScreen',
 
   validateBet(bet: CoinflipBet, player: PlayerContext): BetValidationResult {
@@ -34,8 +35,8 @@ export const coinflipGame: GameModule<CoinflipBet, null> = {
     return { valid: true };
   },
 
-  resolve(rngRoll: number, bets: Array<{ bet: CoinflipBet; player: PlayerContext }>): ResolveResult {
-    const result = rngRoll % 2 === 0 ? 'heads' : 'tails';
+  resolve(rng: RngOutcome, bets: Array<{ bet: CoinflipBet; player: PlayerContext }>): ResolveResult {
+    const result = rng.roll === 0 ? 'heads' : 'tails';
     const payouts = bets.map(({ bet, player }) => {
       const win = bet.choice === result;
       return { walletId: player.walletId, amount: win ? Math.floor(bet.stake * MULTIPLIER) : 0 };

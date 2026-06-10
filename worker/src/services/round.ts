@@ -5,8 +5,6 @@ import { getActiveSeedRow, incrementNonceStmt } from './fairness.js';
 import { trackBetPlaced, trackBetResolved, trackBalanceDelta } from './analytics.js';
 import type { PublicProof } from './rng.js';
 
-const MAX_ROLL = 100;
-
 export interface PlayRequest {
   gameId: string;
   bet: { stake: number; [key: string]: unknown };
@@ -40,10 +38,13 @@ export async function playRound(db: D1Database, req: PlayRequest): Promise<PlayR
 
   const rngResult = await reveal(
     { serverSeed: seed.seed, clientSeeds: [req.clientSeed], nonce },
-    MAX_ROLL,
+    game.maxRoll,
   );
 
-  const resolveResult = game.resolve(rngResult.roll, [{ bet: req.bet, player }]);
+  const resolveResult = game.resolve(
+    { roll: rngResult.roll, hmacHex: rngResult.proof.combinedHmac },
+    [{ bet: req.bet, player }],
+  );
   const payout = resolveResult.payouts[0]?.amount ?? 0;
 
   const roundId = `round:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
@@ -88,6 +89,6 @@ export async function playRound(db: D1Database, req: PlayRequest): Promise<PlayR
     outcome: resolveResult.outcome,
     balanceBefore: settlement.balanceBefore,
     balanceAfter: settlement.balanceAfter,
-    proof: toPublicProof(rngResult.proof),
+    proof: toPublicProof(rngResult.proof, game.maxRoll),
   };
 }

@@ -4,6 +4,12 @@ import type { PlayerContext } from './contract.js';
 
 const player: PlayerContext = { userId: 'u1', walletId: 'w1', balance: 10_000 };
 
+const rng = (roll: number) => ({
+  roll,
+  hmacHex: roll.toString(16).padStart(2, '0').repeat(32).slice(0, 64),
+});
+
+
 describe('coinflip game', () => {
   it('accepts valid bet', () => {
     expect(coinflipGame.validateBet({ stake: 100, choice: 'heads' }, player).valid).toBe(true);
@@ -19,20 +25,20 @@ describe('coinflip game', () => {
     expect(coinflipGame.validateBet({ stake: 100, choice: 'heads' }, broke).valid).toBe(false);
   });
 
-  it('wins on correct guess (even = heads)', () => {
-    const r = coinflipGame.resolve(42, [{ bet: { stake: 100, choice: 'heads' }, player }]);
+  it('wins on correct guess (0 = heads)', () => {
+    const r = coinflipGame.resolve(rng(0), [{ bet: { stake: 100, choice: 'heads' }, player }]);
     expect((r.outcome as { win: boolean }).win).toBe(true);
     expect(r.payouts[0].amount).toBe(198);
   });
 
   it('loses on wrong guess', () => {
-    const r = coinflipGame.resolve(43, [{ bet: { stake: 100, choice: 'heads' }, player }]);
+    const r = coinflipGame.resolve(rng(1), [{ bet: { stake: 100, choice: 'heads' }, player }]);
     expect((r.outcome as { win: boolean }).win).toBe(false);
     expect(r.payouts[0].amount).toBe(0);
   });
 
   it('deterministic for same inputs', () => {
     const args = [{ bet: { stake: 100, choice: 'tails' as const }, player }];
-    expect(coinflipGame.resolve(7, args)).toEqual(coinflipGame.resolve(7, args));
+    expect(coinflipGame.resolve(rng(1), args)).toEqual(coinflipGame.resolve(rng(1), args));
   });
 });

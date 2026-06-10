@@ -35,6 +35,7 @@ export interface UserInfo {
 
 export interface PublicProof {
   serverSeedHash: string;
+  maxRoll: number;
   clientSeeds: string[];
   nonce: number;
   combinedHmac: string;

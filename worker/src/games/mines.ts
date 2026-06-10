@@ -1,4 +1,4 @@
-import type { GameModule, PlayerContext, BetValidationResult, ResolveResult } from './contract.js';
+import type { GameModule, PlayerContext, BetValidationResult, ResolveResult, RngOutcome } from './contract.js';
 
 export interface MinesBet {
   stake: number;
@@ -21,15 +21,16 @@ function calculateMultiplier(picks: number, mines: number): number {
   return Math.floor(multiplier * 0.99 * 100) / 100; // 1% house edge
 }
 
-// Derive mine positions from RNG roll deterministically
-function deriveMinePositions(rngRoll: number, mineCount: number, hmacHex: string): number[] {
+// Draws mine positions from the round's full 256-bit HMAC: one byte per draw
+// into a shrinking pool (Fisher-Yates style). 32 bytes cover MAX_MINES = 24
+// draws; the byte-modulo bias over a pool of <= 25 is negligible for play money.
+function deriveMinePositions(hmacHex: string, mineCount: number): number[] {
   const positions: number[] = [];
   const available = Array.from({ length: GRID_SIZE }, (_, i) => i);
 
   for (let i = 0; i < mineCount; i++) {
-    // Use successive 4-char chunks of the hmac hex to pick positions
-    const chunk = hmacHex.slice((i * 4) % (hmacHex.length - 4), (i * 4) % (hmacHex.length - 4) + 4);
-    const idx = parseInt(chunk, 16) % available.length;
+    const byte = parseInt(hmacHex.slice(i * 2, i * 2 + 2), 16);
+    const idx = byte % available.length;
     positions.push(available[idx]);
     available.splice(idx, 1);
   }
@@ -41,6 +42,7 @@ export const minesGame: GameModule<MinesBet, null> = {
   id: 'mines',
   name: 'Mines',
   runtimeTier: 'house',
+  maxRoll: 4294967296, // roll unused: positions derive from the full hmac stream
   uiComponent: 'MinesScreen',
 
   validateBet(bet: MinesBet, player: PlayerContext): BetValidationResult {
@@ -76,11 +78,9 @@ export const minesGame: GameModule<MinesBet, null> = {
     return { valid: true };
   },
 
-  resolve(rngRoll: number, bets: Array<{ bet: MinesBet; player: PlayerContext }>): ResolveResult {
+  resolve(rng: RngOutcome, bets: Array<{ bet: MinesBet; player: PlayerContext }>): ResolveResult {
     const bet = bets[0].bet;
-    // Use rngRoll as a seed to generate a hex string for mine placement
-    const hexSeed = rngRoll.toString(16).padStart(8, '0').repeat(8);
-    const minePositions = deriveMinePositions(rngRoll, bet.mineCount, hexSeed);
+    const minePositions = deriveMinePositions(rng.hmacHex, bet.mineCount);
     const mineSet = new Set(minePositions);
 
     const hitMine = bet.picks.some((p) => mineSet.has(p));

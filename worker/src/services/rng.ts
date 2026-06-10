@@ -102,15 +102,17 @@ export async function verify(proof: FairnessProof, maxRoll: number): Promise<boo
 // raw seed is disclosed only on rotation, after which past rounds can be verified.
 export interface PublicProof {
   serverSeedHash: string;
+  maxRoll: number;
   clientSeeds: string[];
   nonce: number;
   combinedHmac: string;
   roll: number;
 }
 
-export function toPublicProof(p: FairnessProof): PublicProof {
+export function toPublicProof(p: FairnessProof, maxRoll: number): PublicProof {
   return {
     serverSeedHash: p.serverSeedHash,
+    maxRoll,
     clientSeeds: p.clientSeeds,
     nonce: p.nonce,
     combinedHmac: p.combinedHmac,

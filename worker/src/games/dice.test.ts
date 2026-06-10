@@ -4,6 +4,12 @@ import type { PlayerContext } from './contract.js';
 
 const player: PlayerContext = { userId: 'u1', walletId: 'w1', balance: 10_000 };
 
+const rng = (roll: number) => ({
+  roll,
+  hmacHex: roll.toString(16).padStart(2, '0').repeat(32).slice(0, 64),
+});
+
+
 describe('dice game', () => {
   describe('validateBet', () => {
     it('accepts a valid bet', () => {
@@ -79,7 +85,7 @@ describe('dice game', () => {
 
   describe('resolve', () => {
     it('wins on roll under target', () => {
-      const result = diceGame.resolve(30, [{ bet: { stake: 100, target: 50, direction: 'under' }, player }]);
+      const result = diceGame.resolve(rng(30), [{ bet: { stake: 100, target: 50, direction: 'under' }, player }]);
       const outcome = result.outcome as { win: boolean; roll: number };
       expect(outcome.win).toBe(true);
       expect(outcome.roll).toBe(30);
@@ -87,21 +93,21 @@ describe('dice game', () => {
     });
 
     it('loses on roll at or above target (under)', () => {
-      const result = diceGame.resolve(50, [{ bet: { stake: 100, target: 50, direction: 'under' }, player }]);
+      const result = diceGame.resolve(rng(50), [{ bet: { stake: 100, target: 50, direction: 'under' }, player }]);
       const outcome = result.outcome as { win: boolean };
       expect(outcome.win).toBe(false);
       expect(result.payouts[0].amount).toBe(0);
     });
 
     it('wins on roll at or above target (over)', () => {
-      const result = diceGame.resolve(50, [{ bet: { stake: 100, target: 50, direction: 'over' }, player }]);
+      const result = diceGame.resolve(rng(50), [{ bet: { stake: 100, target: 50, direction: 'over' }, player }]);
       const outcome = result.outcome as { win: boolean };
       expect(outcome.win).toBe(true);
       expect(result.payouts[0].amount).toBeGreaterThan(0);
     });
 
     it('loses on roll below target (over)', () => {
-      const result = diceGame.resolve(30, [{ bet: { stake: 100, target: 50, direction: 'over' }, player }]);
+      const result = diceGame.resolve(rng(30), [{ bet: { stake: 100, target: 50, direction: 'over' }, player }]);
       const outcome = result.outcome as { win: boolean };
       expect(outcome.win).toBe(false);
       expect(result.payouts[0].amount).toBe(0);
@@ -109,24 +115,24 @@ describe('dice game', () => {
 
     it('deterministic for same inputs', () => {
       const args = [{ bet: { stake: 100, target: 50, direction: 'under' as const }, player }];
-      const r1 = diceGame.resolve(42, args);
-      const r2 = diceGame.resolve(42, args);
+      const r1 = diceGame.resolve(rng(42), args);
+      const r2 = diceGame.resolve(rng(42), args);
       expect(r1).toEqual(r2);
     });
 
     it('handles boundary roll values', () => {
       // Roll 0: under any valid target should win
-      const r0 = diceGame.resolve(0, [{ bet: { stake: 100, target: 1, direction: 'under' }, player }]);
+      const r0 = diceGame.resolve(rng(0), [{ bet: { stake: 100, target: 1, direction: 'under' }, player }]);
       expect((r0.outcome as { win: boolean }).win).toBe(true);
 
       // Roll 99: over 98 should win (roll >= 98)
-      const r99 = diceGame.resolve(99, [{ bet: { stake: 100, target: 98, direction: 'over' }, player }]);
+      const r99 = diceGame.resolve(rng(99), [{ bet: { stake: 100, target: 98, direction: 'over' }, player }]);
       expect((r99.outcome as { win: boolean }).win).toBe(true);
     });
 
     it('wraps rngRoll into valid range', () => {
       // rngRoll = 150 should be 150 % 100 = 50
-      const result = diceGame.resolve(150, [{ bet: { stake: 100, target: 50, direction: 'under' }, player }]);
+      const result = diceGame.resolve(rng(150), [{ bet: { stake: 100, target: 50, direction: 'under' }, player }]);
       expect((result.outcome as { roll: number }).roll).toBe(50);
     });
 
@@ -134,7 +140,7 @@ describe('dice game', () => {
       const stake = 1000;
       const target = 50;
       const multiplier = calculateMultiplier(target, 'under');
-      const result = diceGame.resolve(25, [{ bet: { stake, target, direction: 'under' }, player }]);
+      const result = diceGame.resolve(rng(25), [{ bet: { stake, target, direction: 'under' }, player }]);
       expect(result.payouts[0].amount).toBe(Math.floor(stake * multiplier));
     });
   });

@@ -1,4 +1,4 @@
-import type { GameModule, PlayerContext, BetValidationResult, ResolveResult } from './contract.js';
+import type { GameModule, PlayerContext, BetValidationResult, ResolveResult, RngOutcome } from './contract.js';
 
 export type RouletteBetType =
   | 'straight'  // single number
@@ -62,6 +62,7 @@ export const rouletteGame: GameModule<RouletteBet, null> = {
   id: 'roulette',
   name: 'Roulette',
   runtimeTier: 'house',
+  maxRoll: ROULETTE_SLOTS,
   uiComponent: 'RouletteScreen',
 
   validateBet(bet: RouletteBet, player: PlayerContext): BetValidationResult {
@@ -88,8 +89,8 @@ export const rouletteGame: GameModule<RouletteBet, null> = {
     return { valid: true };
   },
 
-  resolve(rngRoll: number, bets: Array<{ bet: RouletteBet; player: PlayerContext }>): ResolveResult {
-    const spin = rngRoll % ROULETTE_SLOTS;
+  resolve(rng: RngOutcome, bets: Array<{ bet: RouletteBet; player: PlayerContext }>): ResolveResult {
+    const spin = rng.roll; // already a fair pocket in [0, ROULETTE_SLOTS)
     const color = spin === 0 ? 'green' : RED_NUMBERS.has(spin) ? 'red' : 'black';
 
     const payouts = bets.map(({ bet, player }) => {

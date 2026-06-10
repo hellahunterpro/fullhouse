@@ -4,6 +4,7 @@ import { tokens } from '../theme';
 interface Props {
   proof: {
     serverSeedHash: string;
+    maxRoll?: number;
     clientSeeds: string[];
     nonce: number;
     combinedHmac: string;

@@ -1,4 +1,4 @@
-import type { GameModule, PlayerContext, BetValidationResult, ResolveResult } from './contract.js';
+import type { GameModule, PlayerContext, BetValidationResult, ResolveResult, RngOutcome } from './contract.js';
 
 export interface DiceBet {
   stake: number;
@@ -35,6 +35,7 @@ export const diceGame: GameModule<DiceBet, null> = {
   id: 'dice',
   name: 'Dice',
   runtimeTier: 'house',
+  maxRoll: 100,
   uiComponent: 'DiceScreen',
 
   validateBet(bet: DiceBet, player: PlayerContext): BetValidationResult {
@@ -59,8 +60,8 @@ export const diceGame: GameModule<DiceBet, null> = {
     return { valid: true };
   },
 
-  resolve(rngRoll: number, bets: Array<{ bet: DiceBet; player: PlayerContext }>): ResolveResult {
-    const roll = rngRoll % ROLL_RANGE;
+  resolve(rng: RngOutcome, bets: Array<{ bet: DiceBet; player: PlayerContext }>): ResolveResult {
+    const roll = rng.roll % ROLL_RANGE;
     const payouts = bets.map(({ bet, player }) => {
       const win =
         bet.direction === 'under' ? roll < bet.target : roll >= bet.target;
