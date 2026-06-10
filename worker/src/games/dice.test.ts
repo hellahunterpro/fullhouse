@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { diceGame, calculateMultiplier, ROLL_RANGE_VALUE } from './dice.js';
+import { diceGame, calculateMultiplier } from './dice.js';
 import type { PlayerContext } from './contract.js';
 
 const player: PlayerContext = { userId: 'u1', walletId: 'w1', balance: 10_000 };
