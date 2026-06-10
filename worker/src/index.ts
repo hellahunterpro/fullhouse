@@ -3,6 +3,7 @@ import { diceGame } from './games/dice.js';
 import { authenticate, type AuthenticatedUser } from './services/auth.js';
 import { playRound } from './services/round.js';
 import { getBalance } from './services/wallet.js';
+import { trackAuth } from './services/analytics.js';
 
 export interface Env {
   DB: D1Database;
@@ -44,6 +45,7 @@ export default {
     try {
       if (url.pathname === '/api/me' && request.method === 'GET') {
         const user = await authFromRequest(env.DB, request, env.BOT_TOKEN);
+        await trackAuth(env.DB, user.id, user.isNewUser, user.tgId);
         const balance = await getBalance(env.DB, user.walletId);
         return json({ user: { id: user.id, tgId: user.tgId, username: user.username, firstName: user.firstName }, balance });
       }

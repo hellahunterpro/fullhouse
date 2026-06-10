@@ -83,7 +83,7 @@ describe('end-to-end round', () => {
     expect(valid).toBe(true);
   });
 
-  it('writes an audit event', async () => {
+  it('writes structured analytics events', async () => {
     const user = await provisionUser(db, { id: 77777, username: 'audit_test' });
 
     await playRound(db, {
@@ -95,15 +95,29 @@ describe('end-to-end round', () => {
     });
 
     const events = await db
-      .prepare('SELECT event_type, payload FROM audit_events WHERE user_id = ? AND event_type = ?')
-      .bind(user.id, 'bet_resolved')
+      .prepare('SELECT event_type, payload FROM audit_events WHERE user_id = ? ORDER BY created_at')
+      .bind(user.id)
       .all();
 
-    expect(events.results).toHaveLength(1);
-    const payload = JSON.parse(events.results[0].payload as string);
-    expect(payload.gameId).toBe('dice');
-    expect(payload.stake).toBe(100);
-    expect(payload.balanceBefore).toBe(10_000);
+    const types = events.results.map((e) => e.event_type);
+    expect(types).toContain('bet_placed');
+    expect(types).toContain('bet_resolved');
+    expect(types).toContain('balance_delta');
+
+    const placed = events.results.find((e) => e.event_type === 'bet_placed');
+    const placedPayload = JSON.parse(placed!.payload as string);
+    expect(placedPayload.gameId).toBe('dice');
+    expect(placedPayload.stake).toBe(100);
+    expect(placedPayload.commitment).toBeTruthy();
+
+    const resolved = events.results.find((e) => e.event_type === 'bet_resolved');
+    const resolvedPayload = JSON.parse(resolved!.payload as string);
+    expect(resolvedPayload.netDelta).toBeDefined();
+
+    const delta = events.results.find((e) => e.event_type === 'balance_delta');
+    const deltaPayload = JSON.parse(delta!.payload as string);
+    expect(deltaPayload.balanceBefore).toBe(10_000);
+    expect(deltaPayload.delta).toBe(deltaPayload.balanceAfter - deltaPayload.balanceBefore);
   });
 
   it('rejects invalid bets', async () => {

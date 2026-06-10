@@ -1,7 +1,7 @@
 import { getGame } from '../games/registry.js';
 import { generateServerSeed, commit, reveal } from './rng.js';
 import { debit, credit, getBalance } from './wallet.js';
-import { writeAuditEvent } from './audit.js';
+import { trackBetPlaced, trackBetResolved, trackBalanceDelta } from './analytics.js';
 import type { DiceBet } from '../games/dice.js';
 import type { FairnessProof } from './rng.js';
 
@@ -46,17 +46,20 @@ export async function playRound(db: D1Database, req: PlayRequest): Promise<PlayR
   // Resolve (pure)
   const resolveResult = game.resolve(rngResult.roll, [{ bet: req.bet, player }]);
 
-  // Atomic wallet movement
   const roundId = `round:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
   const balanceBefore = balance;
 
-  // Debit the stake
+  await trackBetPlaced(db, req.userId, req.gameId, roundId, req.bet.stake, {
+    target: req.bet.target,
+    direction: req.bet.direction,
+    commitment: commitment.serverSeedHash,
+  });
+
   await debit(db, req.walletId, req.bet.stake, 'bet_stake', {
     refKey: `${roundId}:debit`,
     description: `${game.name} bet`,
   });
 
-  // Credit the payout (if any)
   const payout = resolveResult.payouts[0]?.amount ?? 0;
   if (payout > 0) {
     await credit(db, req.walletId, payout, 'bet_payout', {
@@ -67,17 +70,8 @@ export async function playRound(db: D1Database, req: PlayRequest): Promise<PlayR
 
   const balanceAfter = await getBalance(db, req.walletId);
 
-  // Audit event
-  await writeAuditEvent(db, req.userId, 'bet_resolved', {
-    roundId,
-    gameId: req.gameId,
-    stake: req.bet.stake,
-    payout,
-    outcome: resolveResult.outcome,
-    commitment: commitment.serverSeedHash,
-    balanceBefore,
-    balanceAfter,
-  });
+  await trackBetResolved(db, req.userId, req.gameId, roundId, req.bet.stake, payout, resolveResult.outcome);
+  await trackBalanceDelta(db, req.userId, req.walletId, balanceBefore, balanceAfter, 'dice_round', roundId);
 
   return {
     roundId,
