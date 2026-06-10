@@ -6,6 +6,7 @@ dist/
 build/
 .vite/
 .wrangler/
+*.tsbuildinfo
 
 # Environment & secrets
 .env

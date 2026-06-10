@@ -8,14 +8,14 @@ function getInitData(): string {
 }
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Init-Data': getInitData(),
-      ...opts.headers,
-    },
-  });
+  const initData = getInitData();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...opts.headers as Record<string, string>,
+  };
+  if (initData) headers['X-Init-Data'] = initData;
+
+  const res = await fetch(`${API_BASE}${path}`, { ...opts, headers });
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Request failed');

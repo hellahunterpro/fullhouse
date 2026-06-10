@@ -4,6 +4,7 @@ compatibility_date = "2024-11-01"
 
 [vars]
 BOT_TOKEN = "dev-bot-token"
+DEV_MODE = "true"
 
 [[d1_databases]]
 binding = "DB"
