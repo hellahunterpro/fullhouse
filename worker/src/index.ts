@@ -12,6 +12,7 @@ import { getHistory } from './services/history.js';
 import { getLeaderboard } from './services/leaderboard.js';
 import { claimDailyBonus } from './services/daily-bonus.js';
 import { getCommitment, rotateSeed } from './services/fairness.js';
+import { ensureSchema } from './db/bootstrap.js';
 import type { FairnessProof } from './services/rng.js';
 
 export interface Env {
@@ -62,6 +63,8 @@ export default {
     }
 
     try {
+      await ensureSchema(env.DB);
+
       if (url.pathname === '/api/games' && request.method === 'GET') {
         const games = listGames().map((g) => ({
           id: g.id, name: g.name, runtimeTier: g.runtimeTier, uiComponent: g.uiComponent,
