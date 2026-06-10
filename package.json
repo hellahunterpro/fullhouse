@@ -13,7 +13,8 @@
     "lint": "eslint --no-error-on-unmatched-pattern . --ext .ts,.tsx",
     "format": "prettier --check .",
     "test": "npm run test --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present"
+    "build": "npm run build --workspaces --if-present",
+    "deploy": "npm run build --workspace web && (cd worker && npx wrangler deploy)"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",

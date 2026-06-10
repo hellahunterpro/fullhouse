@@ -18,6 +18,7 @@ export interface Env {
   DB: D1Database;
   BOT_TOKEN: string;
   DEV_MODE?: string;
+  ASSETS: Fetcher;
 }
 
 registerGame(diceGame);
@@ -134,7 +135,10 @@ export default {
         return json(result);
       }
 
-      return json({ error: 'Not found' }, 404);
+      if (url.pathname.startsWith('/api/')) {
+        return json({ error: 'Not found' }, 404);
+      }
+      return env.ASSETS.fetch(request);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal error';
       const status = message.includes('Invalid') || message.includes('Missing') || message.includes('expired')
