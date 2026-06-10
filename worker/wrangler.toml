@@ -1,0 +1,22 @@
+name = "fullhouse-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# Single origin: the Worker serves the built frontend (web/dist) and the /api routes
+# from the same URL. Static files are served directly (free, no Worker invocation);
+# /api/* and unknown paths invoke the Worker, which falls back to index.html (SPA).
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+# Remote database: replace database_id with the value printed by
+#   npx wrangler d1 create fullhouse-db
+# DEV_MODE is intentionally absent here so deployed builds always verify Telegram
+# initData. BOT_TOKEN is set as a secret (npx wrangler secret put BOT_TOKEN), never
+# committed. For local dev, copy .dev.vars.example to .dev.vars.
+[[d1_databases]]
+binding = "DB"
+database_name = "fullhouse-db"
+database_id = "REPLACE_WITH_REMOTE_D1_ID"
+migrations_dir = "migrations"

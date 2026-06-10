@@ -1,0 +1,5 @@
+# Local development only. Copy to .dev.vars (git-ignored) and run `wrangler dev`.
+# DEV_MODE bypasses Telegram auth so you can open the app in a plain browser.
+# Never enable DEV_MODE in a deployed build.
+DEV_MODE=true
+BOT_TOKEN=dev-bot-token

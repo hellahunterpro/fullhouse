@@ -6,6 +6,7 @@ dist/
 build/
 .vite/
 .wrangler/
+*.tsbuildinfo
 
 # Environment & secrets
 .env
@@ -17,3 +18,7 @@ build/
 .DS_Store
 .idea/
 .vscode/
+
+# AI tooling (strip before public)
+CLAUDE.md
+.claude/
