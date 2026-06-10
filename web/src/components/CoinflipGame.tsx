@@ -8,23 +8,18 @@ interface Props {
   onBalanceUpdate: (b: number) => void;
 }
 
-export function DiceGame({ balance, onBalanceUpdate }: Props) {
+export function CoinflipGame({ balance, onBalanceUpdate }: Props) {
   const [stake, setStake] = useState(100);
-  const [target, setTarget] = useState(50);
-  const [direction, setDirection] = useState<'under' | 'over'>('under');
+  const [choice, setChoice] = useState<'heads' | 'tails'>('heads');
   const [result, setResult] = useState<PlayResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const winChance = direction === 'under' ? target : 100 - target;
-  const multiplier = Math.floor((100 / winChance) * 0.99 * 100) / 100;
-  const potentialPayout = Math.floor(stake * multiplier);
 
   const handlePlay = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await play('dice', { stake, target, direction }, crypto.randomUUID());
+      const res = await play('coinflip', { stake, choice }, crypto.randomUUID());
       setResult(res);
       onBalanceUpdate(res.balanceAfter);
     } catch (err) {
@@ -32,7 +27,7 @@ export function DiceGame({ balance, onBalanceUpdate }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [stake, target, direction, onBalanceUpdate]);
+  }, [stake, choice, onBalanceUpdate]);
 
   return (
     <div style={{ padding: '16px' }}>
@@ -52,30 +47,29 @@ export function DiceGame({ balance, onBalanceUpdate }: Props) {
         </div>
       </div>
 
-      <div style={{ background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '20px', marginBottom: '16px' }}>
-        <label style={{ color: tokens.textSecondary, fontSize: '14px', display: 'block', marginBottom: '8px' }}>Target: {target}</label>
-        <input type="range" value={target} onChange={(e) => setTarget(parseInt(e.target.value))} min={1} max={98}
-          style={{ width: '100%', accentColor: tokens.accent }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', gap: '8px' }}>
-          {(['under', 'over'] as const).map((d) => (
-            <button key={d} onClick={() => setDirection(d)}
-              style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: direction === d ? tokens.accent : tokens.bg, color: tokens.text, cursor: 'pointer', fontWeight: direction === d ? 'bold' : 'normal', fontSize: '16px' }}>
-              Roll {d === 'under' ? 'Under' : 'Over'} {target}
-            </button>
-          ))}
-        </div>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+        {(['heads', 'tails'] as const).map((c) => (
+          <button key={c} onClick={() => setChoice(c)}
+            style={{
+              flex: 1, padding: '24px 16px', borderRadius: tokens.radius, border: 'none',
+              background: choice === c ? tokens.accent : tokens.bgSecondary,
+              color: tokens.text, cursor: 'pointer', fontSize: '18px', fontWeight: 'bold',
+              textTransform: 'capitalize',
+            }}>
+            {c === 'heads' ? '🪙 Heads' : '🪙 Tails'}
+          </button>
+        ))}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '16px', marginBottom: '16px' }}>
-        <div><div style={{ color: tokens.textSecondary, fontSize: '12px' }}>Win Chance</div><div style={{ color: tokens.text, fontSize: '18px', fontWeight: 'bold' }}>{winChance}%</div></div>
-        <div><div style={{ color: tokens.textSecondary, fontSize: '12px' }}>Multiplier</div><div style={{ color: tokens.text, fontSize: '18px', fontWeight: 'bold' }}>{multiplier}x</div></div>
-        <div><div style={{ color: tokens.textSecondary, fontSize: '12px' }}>Payout</div><div style={{ color: tokens.success, fontSize: '18px', fontWeight: 'bold' }}>{potentialPayout}</div></div>
+      <div style={{ background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '16px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+        <div><div style={{ color: tokens.textSecondary, fontSize: '12px' }}>Win Chance</div><div style={{ color: tokens.text, fontSize: '18px', fontWeight: 'bold' }}>50%</div></div>
+        <div><div style={{ color: tokens.textSecondary, fontSize: '12px' }}>Multiplier</div><div style={{ color: tokens.text, fontSize: '18px', fontWeight: 'bold' }}>1.98x</div></div>
+        <div><div style={{ color: tokens.textSecondary, fontSize: '12px' }}>Payout</div><div style={{ color: tokens.success, fontSize: '18px', fontWeight: 'bold' }}>{Math.floor(stake * 1.98)}</div></div>
       </div>
 
       <button onClick={handlePlay} disabled={loading || stake > balance || stake < 1}
         style={{ width: '100%', padding: '16px', borderRadius: tokens.radius, border: 'none', background: loading ? tokens.border : tokens.accent, color: '#fff', fontSize: '18px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}>
-        {loading ? 'Rolling...' : 'Roll Dice'}
+        {loading ? 'Flipping...' : 'Flip Coin'}
       </button>
 
       {error && <div style={{ background: '#3a1a2a', borderRadius: tokens.radius, padding: '16px', color: tokens.danger, marginTop: '16px' }}>{error}</div>}
