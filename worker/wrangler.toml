@@ -18,5 +18,5 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "fullhouse-db"
-database_id = "REPLACE_WITH_REMOTE_D1_ID"
+database_id = "076092f0-91f0-45d1-95f3-20cba3846b0a"
 migrations_dir = "migrations"
