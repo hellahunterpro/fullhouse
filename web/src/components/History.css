@@ -1,0 +1,88 @@
+.history {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+.history-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-control);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.history-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-card-game {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.history-card-time {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.history-card-amounts {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-card-flow {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.history-card-delta {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.history-card-delta--win {
+  color: var(--accent);
+}
+
+.history-card-delta--loss {
+  color: var(--danger);
+}
+
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 64px 20px;
+  text-align: center;
+}
+
+.history-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 8px;
+}
+
+.history-empty-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+}
