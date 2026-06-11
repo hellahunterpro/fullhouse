@@ -1,79 +1,174 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { play, type PlayResult } from '../api';
-import { tokens } from '../theme';
-import { GameResult } from './GameResult';
+import { Button, Panel } from '../ui';
+import { getClientSeed } from '../clientSeed';
+import { hapticImpact, hapticResult } from '../haptics';
+import { StakeInput } from './StakeInput';
+import { FairnessProof } from './FairnessProof';
+import { flipTarget } from './flipMath';
+import './CoinflipGame.css';
 
 interface Props {
   balance: number;
   onBalanceUpdate: (b: number) => void;
 }
 
+interface CoinflipOutcome {
+  result: 'heads' | 'tails';
+  win: boolean;
+  payout: number;
+  multiplier: number;
+}
+
+const FLIP_MS = 900;
+const MULTIPLIER = 1.98;
+
+function CoinFace({ side }: { side: 'heads' | 'tails' }) {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="47" fill="var(--bg-1)" stroke="var(--gold)" strokeWidth="4" />
+      <circle cx="50" cy="50" r="36" fill="none" stroke="var(--gold)" strokeWidth="1.5" opacity="0.6" />
+      {side === 'heads' ? (
+        <>
+          <path
+            d="M50 22l6.5 13.5 14.5 2-10.5 10 2.5 14.5L50 55l-13 7 2.5-14.5-10.5-10 14.5-2z"
+            fill="var(--gold)"
+          />
+          <circle cx="50" cy="78" r="3" fill="var(--gold)" opacity="0.7" />
+        </>
+      ) : (
+        <>
+          <path d="M34 32h32M50 32v36" stroke="var(--gold)" strokeWidth="7" strokeLinecap="round" />
+          <circle cx="32" cy="74" r="3" fill="var(--gold)" opacity="0.7" />
+          <circle cx="68" cy="74" r="3" fill="var(--gold)" opacity="0.7" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 export function CoinflipGame({ balance, onBalanceUpdate }: Props) {
   const [stake, setStake] = useState(100);
   const [choice, setChoice] = useState<'heads' | 'tails'>('heads');
   const [result, setResult] = useState<PlayResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState<'idle' | 'waiting' | 'flipping' | 'win' | 'lose'>('idle');
+  const [deg, setDeg] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const degRef = useRef(0);
+  const timerRef = useRef(0);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  const busy = phase === 'waiting' || phase === 'flipping';
 
   const handlePlay = useCallback(async () => {
-    setLoading(true);
+    hapticImpact('medium');
+    setPhase('waiting');
+    setResult(null);
     setError(null);
+
     try {
-      const res = await play('coinflip', { stake, choice }, crypto.randomUUID());
-      setResult(res);
-      onBalanceUpdate(res.balanceAfter);
+      const res = await play('coinflip', { stake, choice }, getClientSeed());
+      const outcome = res.outcome as unknown as CoinflipOutcome;
+      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+
+      const settle = () => {
+        setResult(res);
+        setPhase(outcome.win ? 'win' : 'lose');
+        onBalanceUpdate(res.balanceAfter);
+        hapticResult(outcome.win);
+      };
+
+      const target = flipTarget(degRef.current, outcome.result);
+      degRef.current = target;
+      setDeg(target);
+
+      if (reduced) {
+        settle();
+      } else {
+        setPhase('flipping');
+        timerRef.current = window.setTimeout(settle, FLIP_MS);
+      }
     } catch (err) {
+      setPhase('idle');
       setError(err instanceof Error ? err.message : 'Error');
-    } finally {
-      setLoading(false);
+      hapticResult(false);
     }
   }, [stake, choice, onBalanceUpdate]);
 
+  const outcome = result ? (result.outcome as unknown as CoinflipOutcome) : null;
+
   return (
-    <div style={{ padding: '16px' }}>
-      <div style={{ background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '20px', marginBottom: '16px' }}>
-        <label style={{ color: tokens.textDim, fontSize: '14px', display: 'block', marginBottom: '8px' }}>Stake</label>
-        <input type="number" value={stake}
-          onChange={(e) => setStake(Math.max(1, Math.min(balance, parseInt(e.target.value) || 0)))}
-          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${tokens.line}`, background: tokens.bg0, color: tokens.text, fontSize: '18px', boxSizing: 'border-box' }}
-        />
-        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-          {[10, 50, 100, 500, 1000].map((v) => (
-            <button key={v} onClick={() => setStake(Math.min(v, balance))}
-              style={{ flex: 1, padding: '8px', borderRadius: '6px', border: `1px solid ${tokens.line}`, background: stake === v ? tokens.accent : tokens.bg0, color: tokens.text, cursor: 'pointer', fontSize: '13px' }}>
-              {v}
-            </button>
-          ))}
+    <div className="coinflip">
+      <div className={`coin-stage coin-stage--${phase}`}>
+        <div className="coin-stage-glow" aria-hidden="true" />
+        <div
+          className={phase === 'waiting' ? 'coin coin--waiting' : 'coin'}
+          style={{ transform: `rotateX(${deg}deg)` }}
+          data-testid="coin"
+        >
+          <div className="coin-face coin-face--front">
+            <CoinFace side="heads" />
+          </div>
+          <div className="coin-face coin-face--back">
+            <CoinFace side="tails" />
+          </div>
+        </div>
+        <div className="coin-caption">
+          {phase === 'win' && outcome && `${outcome.result.toUpperCase()} — won ${outcome.payout.toLocaleString()} chips`}
+          {phase === 'lose' && outcome && `${outcome.result.toUpperCase()} — no luck this time`}
+          {(phase === 'waiting' || phase === 'flipping') && 'Flipping…'}
+          {phase === 'idle' && 'Pick a side and flip'}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+      <div className="coin-choice">
         {(['heads', 'tails'] as const).map((c) => (
-          <button key={c} onClick={() => setChoice(c)}
-            style={{
-              flex: 1, padding: '24px 16px', borderRadius: tokens.radiusCard, border: 'none',
-              background: choice === c ? tokens.accent : tokens.bg1,
-              color: tokens.text, cursor: 'pointer', fontSize: '18px', fontWeight: 'bold',
-              textTransform: 'capitalize',
-            }}>
-            {c === 'heads' ? '🪙 Heads' : '🪙 Tails'}
+          <button
+            key={c}
+            className={choice === c ? 'coin-choice-card coin-choice-card--active' : 'coin-choice-card'}
+            disabled={busy}
+            onClick={() => setChoice(c)}
+          >
+            <span className="coin-choice-icon">
+              <CoinFace side={c} />
+            </span>
+            <span className="coin-choice-name">{c === 'heads' ? 'Heads' : 'Tails'}</span>
           </button>
         ))}
       </div>
 
-      <div style={{ background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '16px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-        <div><div style={{ color: tokens.textDim, fontSize: '12px' }}>Win Chance</div><div style={{ color: tokens.text, fontSize: '18px', fontWeight: 'bold' }}>50%</div></div>
-        <div><div style={{ color: tokens.textDim, fontSize: '12px' }}>Multiplier</div><div style={{ color: tokens.text, fontSize: '18px', fontWeight: 'bold' }}>1.98x</div></div>
-        <div><div style={{ color: tokens.textDim, fontSize: '12px' }}>Payout</div><div style={{ color: tokens.accent, fontSize: '18px', fontWeight: 'bold' }}>{Math.floor(stake * 1.98)}</div></div>
+      <div className="coin-readout">
+        <div className="coin-stat">
+          <span className="coin-stat-label">Chance</span>
+          <span className="coin-stat-value">50%</span>
+        </div>
+        <div className="coin-stat">
+          <span className="coin-stat-label">Multiplier</span>
+          <span className="coin-stat-value">{MULTIPLIER}×</span>
+        </div>
+        <div className="coin-stat">
+          <span className="coin-stat-label">Payout</span>
+          <span className="coin-stat-value coin-stat-value--accent">
+            {Math.floor(stake * MULTIPLIER).toLocaleString()}
+          </span>
+        </div>
       </div>
 
-      <button onClick={handlePlay} disabled={loading || stake > balance || stake < 1}
-        style={{ width: '100%', padding: '16px', borderRadius: tokens.radiusCard, border: 'none', background: loading ? tokens.line : tokens.accent, color: '#fff', fontSize: '18px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}>
-        {loading ? 'Flipping...' : 'Flip Coin'}
-      </button>
+      <Panel>
+        <StakeInput stake={stake} balance={balance} onChange={setStake} disabled={busy} />
+      </Panel>
 
-      {error && <div style={{ background: '#3a1a2a', borderRadius: tokens.radiusCard, padding: '16px', color: tokens.danger, marginTop: '16px' }}>{error}</div>}
-      {result && <GameResult result={result} />}
+      <Button block loading={busy} disabled={stake > balance || stake < 1} onClick={handlePlay}>
+        Flip Coin
+      </Button>
+
+      {error && <div className="coin-error">{error}</div>}
+      {result && (
+        <div className="coin-proof">
+          <FairnessProof proof={result.proof} />
+        </div>
+      )}
     </div>
   );
 }
