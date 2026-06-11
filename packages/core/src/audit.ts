@@ -1,4 +1,4 @@
-import { generateId } from '../utils/id.js';
+import { generateId } from './id.js';
 
 export async function writeAuditEvent(
   db: D1Database,

@@ -2,9 +2,10 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Generates worker/src/db/bootstrap-sql.generated.ts from worker/migrations/*.sql.
-// Statements are rewritten to IF NOT EXISTS so the worker can apply the schema
-// idempotently at runtime; the migration files remain the single source of truth.
+// Generates packages/core/src/db/bootstrap-sql.generated.ts from
+// worker/migrations/*.sql. Statements are rewritten to IF NOT EXISTS so the
+// worker can apply the schema idempotently at runtime; the migration files
+// remain the single source of truth.
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const migrationsDir = join(root, 'worker', 'migrations');
@@ -31,5 +32,5 @@ const out = `/* eslint-disable */
 export const BOOTSTRAP_STATEMENTS: string[] = ${JSON.stringify(statements, null, 2)};
 `;
 
-writeFileSync(join(root, 'worker', 'src', 'db', 'bootstrap-sql.generated.ts'), out);
+writeFileSync(join(root, 'packages', 'core', 'src', 'db', 'bootstrap-sql.generated.ts'), out);
 console.log(`bootstrap: ${statements.length} statements from ${files.length} migration files`);

@@ -1,6 +1,6 @@
-import { generateId } from '../utils/id.js';
+import { generateId } from './id.js';
 import { credit } from './wallet.js';
-import type { UserRow } from '../db/schema.js';
+import type { UserRow } from './db/schema.js';
 
 const STARTING_CHIPS = 10_000;
 const INIT_DATA_MAX_AGE_S = 300; // 5 minutes

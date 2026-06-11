@@ -11,7 +11,7 @@ let mf: Miniflare;
 let db: D1Database;
 
 async function applyMigrations(db: D1Database) {
-  const migration = readFileSync(join(__dirname, '../../migrations/0001_init.sql'), 'utf-8');
+  const migration = readFileSync(join(__dirname, '../../../worker/migrations/0001_init.sql'), 'utf-8');
   const noComments = migration.replace(/--[^\n]*/g, '');
   const stmts = noComments.split(';').map((s) => s.trim()).filter((s) => s.length > 0);
   for (const stmt of stmts) {

@@ -1,5 +1,4 @@
-import { credit } from './wallet.js';
-import { writeAuditEvent } from './audit.js';
+import { credit, writeAuditEvent } from '@fullhouse/core';
 
 const DAILY_BONUS = 1_000;
 const STREAK_MULTIPLIER = 100; // extra chips per day of streak

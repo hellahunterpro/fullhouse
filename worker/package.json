@@ -1,6 +1,9 @@
 {
   "name": "fullhouse-worker",
   "private": true,
+  "dependencies": {
+    "@fullhouse/core": "*"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "typecheck": "tsc --noEmit",

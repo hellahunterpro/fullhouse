@@ -3,10 +3,7 @@ import { Miniflare } from 'miniflare';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { playRound } from './round.js';
-import { provisionUser } from './auth.js';
-import { getBalance } from './wallet.js';
-import { verify } from './rng.js';
-import { getCommitment, rotateSeed } from './fairness.js';
+import { provisionUser, getBalance, verify, getCommitment, rotateSeed } from '@fullhouse/core';
 import { registerGame, clearRegistry } from '../games/registry.js';
 import { diceGame } from '../games/dice.js';
 

@@ -1,6 +1,6 @@
-import { generateId } from '../utils/id.js';
+import { generateId } from './id.js';
 import { generateServerSeed, commit } from './rng.js';
-import type { ServerSeedRow } from '../db/schema.js';
+import type { ServerSeedRow } from './db/schema.js';
 
 export interface Commitment {
   id: string;

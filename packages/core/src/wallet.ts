@@ -1,5 +1,5 @@
-import { generateId } from '../utils/id.js';
-import type { WalletRow, LedgerEntryRow } from '../db/schema.js';
+import { generateId } from './id.js';
+import type { WalletRow, LedgerEntryRow } from './db/schema.js';
 
 export type TransactionType = 'credit' | 'debit';
 

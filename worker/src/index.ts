@@ -3,17 +3,22 @@ import { diceGame } from './games/dice.js';
 import { coinflipGame } from './games/coinflip.js';
 import { minesGame } from './games/mines.js';
 import { rouletteGame } from './games/roulette.js';
-import { authenticate, provisionUser, type AuthenticatedUser } from './services/auth.js';
+import {
+  authenticate,
+  provisionUser,
+  getBalance,
+  trackAuth,
+  verify,
+  getCommitment,
+  rotateSeed,
+  ensureSchema,
+  type AuthenticatedUser,
+  type FairnessProof,
+} from '@fullhouse/core';
 import { playRound } from './services/round.js';
-import { getBalance } from './services/wallet.js';
-import { trackAuth } from './services/analytics.js';
-import { verify } from './services/rng.js';
 import { getHistory } from './services/history.js';
 import { getLeaderboard } from './services/leaderboard.js';
 import { claimDailyBonus, getDailyBonusStatus } from './services/daily-bonus.js';
-import { getCommitment, rotateSeed } from './services/fairness.js';
-import { ensureSchema } from './db/bootstrap.js';
-import type { FairnessProof } from './services/rng.js';
 
 export interface Env {
   DB: D1Database;

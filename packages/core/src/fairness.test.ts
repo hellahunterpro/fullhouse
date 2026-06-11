@@ -9,7 +9,7 @@ let mf: Miniflare;
 let db: D1Database;
 
 async function applyMigrations(db: D1Database) {
-  const dir = join(__dirname, '../../migrations');
+  const dir = join(__dirname, '../../../worker/migrations');
   const files = readdirSync(dir).filter((f: string) => f.endsWith('.sql')).sort();
   for (const file of files) {
     const sql = readFileSync(join(dir, file), 'utf-8').replace(/--[^\n]*/g, '');

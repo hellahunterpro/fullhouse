@@ -1,4 +1,4 @@
-import type { AuditEventRow } from '../db/schema.js';
+import type { AuditEventRow } from '@fullhouse/core';
 
 export interface GameHistoryEntry {
   roundId: string;

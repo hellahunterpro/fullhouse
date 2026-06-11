@@ -3,7 +3,7 @@ import { Miniflare } from 'miniflare';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { claimDailyBonus, getDailyBonusStatus } from './daily-bonus.js';
-import { writeAuditEvent } from './audit.js';
+import { writeAuditEvent } from '@fullhouse/core';
 
 let mf: Miniflare;
 let db: D1Database;

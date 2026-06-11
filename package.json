@@ -2,6 +2,7 @@
   "name": "fullhouse",
   "private": true,
   "workspaces": [
+    "packages/core",
     "worker",
     "web"
   ],
