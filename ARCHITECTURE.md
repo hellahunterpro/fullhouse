@@ -1,94 +1,95 @@
 # Architecture — Full House (virtual-chip casino, Telegram Mini App)
 
-A play-money casino built as a Telegram Mini App. Two families of games: **house**
-(player vs RNG) and **P2P** (player vs player). Virtual chips only — chips are never
-purchasable, cashable, or tradeable for anything of value. This is an entertainment
-product and engineering showcase, not gambling.
+A play-money casino running as a Telegram Mini App. Virtual chips only — never
+purchasable, cashable, or tradeable. Live: the Mini App is served from Cloudflare
+Pages and opened through the Telegram bot's menu button.
 
 ## Principles
 
-- **Server-authoritative.** The client sends *intent* (flip / bet / fold); the server
-  computes the outcome. Never trust client-supplied values, outcomes, or balances.
-- **Two correctness-critical components from day one:** (1) an atomic chip ledger,
-  (2) a provably-fair RNG. Everything else is secondary.
-- **Flexibility through clean boundaries, not pre-built integrations** (strict YAGNI).
-  One concrete play-money implementation behind each interface. No frameworks for
-  features that do not exist yet.
-- **No real money anywhere in the codebase.** No payment, no cashout, no crypto, no
-  conversion to value.
+- **Server-authoritative.** The client sends intent; the server computes every
+  outcome. Client-supplied values, outcomes, or balances are never trusted.
+- **Two correctness-critical components:** the atomic chip ledger and the
+  provably-fair RNG. Everything else is secondary.
+- **Flexibility through clean boundaries, not pre-built integrations** (strict
+  YAGNI). One play-money implementation behind each interface.
+- **No real money anywhere in the codebase.** No payment, cashout, crypto, or
+  conversion paths — in code or in UI wording.
 
 ## Core platform (game-agnostic)
 
-- **Auth boundary** — Telegram `initData` validation in one place (a Worker).
-- **Wallet / ledger** — atomic debit/credit, full transaction log, no negative
-  balances. Amounts are stored as **integer minor units + a currency code**
-  (always `CHIP` for now). Every balance change goes through a single wallet
-  function. This is the most correctness-critical component: a race condition here
-  means chips minted from nothing.
-- **RNG service** — provably-fair (server-seed commit → reveal + client seed +
-  nonce), behind an interface. The interface must be general enough to later accept
-  multiple entropy contributors (needed for P2P, where both players contribute).
-- **Game registry + game-module contract.**
-- **Audit / event log** — every round recorded. This is also the analytics backbone;
-  instrument it from Stage 0.
+- **Auth boundary** — Telegram `initData` signature + freshness validation in one
+  module. Used by the API today and by the realtime worker in Phase 2.
+- **Wallet / ledger** — amounts are integer minor units + currency code (`CHIP`).
+  Every balance change goes through the wallet service; `settleRound` performs
+  stake debit + payout credit + any extra statements (e.g. the seed-nonce bump) in
+  **one atomic batch**. Idempotency via unique ledger ref keys; non-negative
+  balances enforced both by conditional updates and a schema `CHECK`.
+- **Provably-fair RNG** — persistent per-user server seeds: the seed hash is
+  committed **before** any bet, the nonce advances atomically with each
+  settlement, and the raw seed is revealed only on rotation. Outcome =
+  HMAC-SHA256(serverSeed, clientSeeds + nonce). The per-round public proof
+  excludes the raw seed; `/api/verify` reproduces outcomes once a seed is
+  revealed. The interface accepts multiple client seeds (used by P2P duels).
+- **Game registry + game-module contract** (below).
+- **Audit / event log** — every auth, bet, resolution, and balance delta is
+  recorded; this is also the analytics backbone.
+- **Schema bootstrap** — `worker/migrations/*.sql` is the source of truth;
+  `scripts/gen-bootstrap.mjs` compiles the migrations into idempotent
+  `IF NOT EXISTS` statements that the worker applies on an isolate's first
+  request. The remote database never needs a manual migration step.
 
 ## Game-module contract
 
 - `validateBet(bet, player)` — reject illegal bets.
-- `resolve(rngResult, bets) -> payouts` — **pure and deterministic** given the RNG
-  result and the bets. No side effects, no wallet access, no I/O.
-- A state accessor (for clients), a runtime type, and a UI component reference.
+- `resolve(rng, bets) -> payouts` — **pure and deterministic**. `rng` carries
+  `roll` (uniform in `[0, maxRoll)`) and `hmacHex` (the full 256-bit HMAC) for
+  games that need more entropy than one roll — mines boards, card shuffles.
+- Each module declares its **`maxRoll`** (outcome space): dice 100, coinflip 2,
+  roulette 37. The engine derives the roll in exactly that space — no game-side
+  remapping, no truncated outcome spaces.
 - **Money never lives in game code.** All chip movement goes through the wallet
-  service. A buggy or new game therefore cannot corrupt balances; adding a game means
-  implementing the contract, not touching the core. Removing a game means
-  unregistering it.
+  service; a buggy game cannot corrupt balances. Adding a game = implementing the
+  contract and registering it.
 
 ## Runtime tiers
 
-Runtime is a property of the game; one shared core sits under all of them.
+- **Tier 1 — house, request/response** (live): dice, coinflip, roulette, mines on
+  Worker + D1. Blackjack (Phase 4) adds a server-side `active_rounds` state table
+  for multi-action rounds but stays request/response.
+- **Tier 2/3 — real-time:** Cloudflare Pages cannot host Durable Object classes,
+  so real-time lives in a separate `realtime/` Worker exposing one DO per match
+  over WebSocket (initData-authenticated). Shared server logic is extracted to
+  `packages/core` and used by both workers. Chips still move only through the
+  wallet against the same D1 database.
+- Poker hand evaluation (later phases): `pokersolver` (MIT) — do not reimplement.
 
-- **Tier 1 — house, request/response:** Worker + D1 + RNG. **No Durable Objects.**
-  (dice, blackjack-vs-house, roulette, plinko, mines, slots.) Cheapest — start here
-  to prove the core.
-- **Tier 2 — shared real-time:** Durable Object per table + WebSocket + alarms
-  (timers). (live roulette with a shared spin + countdown, multiplayer crash.)
-- **Tier 3 — P2P interactive:** Durable Object per match + WebSocket, turn logic.
-  (coinflip / dice duel, poker.)
-- Poker hand evaluation uses `goldfire/pokersolver` (MIT). Do not reimplement hand
-  ranking.
+## Deployment model
+
+- **Cloudflare Pages, advanced mode.** One build produces `web/dist` (Vite
+  frontend) plus `_worker.js` (esbuild bundle of `worker/src/index.ts`) — the
+  worker serves `/api/*` and falls through to static assets. Bindings live in the
+  Pages project: D1 as `DB`, secret `BOT_TOKEN`.
+- **Releases are git-driven.** Every commit message is prefixed `[skip ci]` by
+  default, which suppresses the Pages build. A release is a commit without the
+  prefix pushed to `main`, made only on an explicit human command. Never deploy
+  from tooling.
+- `worker/wrangler.toml` mirrors the D1 database id for CLI access (local dev,
+  remote queries). The Phase 2 realtime worker deploys separately via wrangler —
+  also human-gated.
 
 ## Seams
 
-**Cheap, build now (needed for correctness anyway):**
+**Built now (needed for correctness anyway):** currency-coded integer amounts; one
+atomic wallet entry point; RNG behind one multi-party-capable interface; pure game
+logic separated from money; a registry that accepts new game types; one auth
+boundary; the audit log.
 
-- Currency-coded integer amounts (always `CHIP`).
-- One wallet function for all balance changes (atomic).
-- RNG behind one interface (general enough for multi-party entropy later).
-- Pure game logic separated from money movement.
-- A game registry that can, in principle, accept a new game type.
-- Auth behind one boundary; an audit / event log.
+**Do NOT build (premature):** payment/crypto cashier (chips come from the free
+claim/bonuses), slot-aggregator adapters, on-chain VRF/contracts, KYC/multi-
+currency, plugin hot-loading.
 
-**Do NOT build now (premature):**
+## Status & plan
 
-- Real payment / crypto cashier — stub it as "claim free chips".
-- A generic slot-aggregator adapter framework.
-- Solana programs / on-chain VRF / smart contracts.
-- KYC / withdrawal / multi-currency UI / FX.
-- Plugin hot-loading (a simple registry + interface is enough for a solo build).
-
-## Stack
-
-- Cloudflare Worker + D1, with a React / Vite / TypeScript frontend.
-- Deployment target later: Cloudflare Pages for the Mini App, Worker for the API.
-
-## Build order
-
-- **Stage 0:** core engine + one house game (dice), no Durable Objects. Prove the
-  core; instrument analytics. *(This repo is currently at Stage 0 — see
-  `docs/STAGE-0-PLAN.md`.)*
-- **Stage 1:** P2P duels (first Durable Objects + WebSocket) + retention spine (daily
-  streak, progression, leaderboard) + shared chip economy + provably-fair.
-- **Stage 2:** breadth (roulette / plinko / mines / slots) + clubs / tournaments /
-  cosmetics + a Balatro-style poker reframe.
-- **Stage 3:** structured multiplayer poker (tournaments / ranks / buy-in /
-  reputation) + seasonal live-ops.
+Stage 0 (`docs/STAGE-0-PLAN.md`) is complete and deployed. Active work follows
+`docs/IMPROVEMENT-PLAN.md`: Phase 1 visual system → Phase 2 P2P duels →
+Phase 3 retention → Phase 4 game breadth → Phase 5 (gated) poker reframe.
