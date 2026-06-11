@@ -1,85 +1,181 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { play, type PlayResult } from '../api';
-import { tokens } from '../theme';
-import { GameResult } from './GameResult';
+import { Button, Panel } from '../ui';
+import { getClientSeed } from '../clientSeed';
+import { hapticImpact, hapticResult } from '../haptics';
+import { StakeInput } from './StakeInput';
+import { FairnessProof } from './FairnessProof';
+import './DiceGame.css';
 
 interface Props {
   balance: number;
   onBalanceUpdate: (b: number) => void;
 }
 
+interface DiceOutcome {
+  roll: number;
+  target: number;
+  direction: 'under' | 'over';
+  win: boolean;
+  payout: number;
+  multiplier: number;
+}
+
+// Mirrors the server formula for the live preview; the server result is authoritative.
+function previewMultiplier(target: number, direction: 'under' | 'over'): number {
+  const winCount = direction === 'under' ? target : 100 - target;
+  if (winCount <= 0) return 0;
+  return Math.floor((100 / winCount) * 0.99 * 100) / 100;
+}
+
+const SCRAMBLE_MS = 700;
+
 export function DiceGame({ balance, onBalanceUpdate }: Props) {
   const [stake, setStake] = useState(100);
   const [target, setTarget] = useState(50);
   const [direction, setDirection] = useState<'under' | 'over'>('under');
   const [result, setResult] = useState<PlayResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [display, setDisplay] = useState<number | null>(null);
+  const [phase, setPhase] = useState<'idle' | 'rolling' | 'win' | 'lose'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const rafRef = useRef(0);
+  const timerRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(rafRef.current);
+      clearTimeout(timerRef.current);
+    },
+    [],
+  );
 
   const winChance = direction === 'under' ? target : 100 - target;
-  const multiplier = Math.floor((100 / winChance) * 0.99 * 100) / 100;
+  const multiplier = previewMultiplier(target, direction);
   const potentialPayout = Math.floor(stake * multiplier);
+  const rolling = phase === 'rolling';
+
+  const settle = useCallback(
+    (res: PlayResult) => {
+      const outcome = res.outcome as unknown as DiceOutcome;
+      cancelAnimationFrame(rafRef.current);
+      setDisplay(outcome.roll);
+      setResult(res);
+      setPhase(outcome.win ? 'win' : 'lose');
+      onBalanceUpdate(res.balanceAfter);
+      hapticResult(outcome.win);
+    },
+    [onBalanceUpdate],
+  );
 
   const handlePlay = useCallback(async () => {
-    setLoading(true);
+    hapticImpact('medium');
+    setPhase('rolling');
+    setResult(null);
     setError(null);
-    try {
-      const res = await play('dice', { stake, target, direction }, crypto.randomUUID());
-      setResult(res);
-      onBalanceUpdate(res.balanceAfter);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error');
-    } finally {
-      setLoading(false);
+
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+    const started = performance.now();
+    if (!reduced) {
+      const tick = () => {
+        setDisplay(Math.floor(Math.random() * 100));
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
     }
-  }, [stake, target, direction, onBalanceUpdate]);
+
+    try {
+      const res = await play('dice', { stake, target, direction }, getClientSeed());
+      const wait = reduced ? 0 : Math.max(0, SCRAMBLE_MS - (performance.now() - started));
+      timerRef.current = window.setTimeout(() => settle(res), wait);
+    } catch (err) {
+      cancelAnimationFrame(rafRef.current);
+      setPhase('idle');
+      setDisplay(null);
+      setError(err instanceof Error ? err.message : 'Error');
+      hapticResult(false);
+    }
+  }, [stake, target, direction, settle]);
+
+  const trackStyle =
+    direction === 'under'
+      ? `linear-gradient(to right, var(--accent) 0%, var(--accent) ${target}%, var(--bg-2) ${target}%, var(--bg-2) 100%)`
+      : `linear-gradient(to right, var(--bg-2) 0%, var(--bg-2) ${target}%, var(--accent) ${target}%, var(--accent) 100%)`;
+
+  const outcome = result ? (result.outcome as unknown as DiceOutcome) : null;
 
   return (
-    <div style={{ padding: '16px' }}>
-      <div style={{ background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '20px', marginBottom: '16px' }}>
-        <label style={{ color: tokens.textDim, fontSize: '14px', display: 'block', marginBottom: '8px' }}>Stake</label>
-        <input type="number" value={stake}
-          onChange={(e) => setStake(Math.max(1, Math.min(balance, parseInt(e.target.value) || 0)))}
-          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${tokens.line}`, background: tokens.bg0, color: tokens.text, fontSize: '18px', boxSizing: 'border-box' }}
-        />
-        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-          {[10, 50, 100, 500, 1000].map((v) => (
-            <button key={v} onClick={() => setStake(Math.min(v, balance))}
-              style={{ flex: 1, padding: '8px', borderRadius: '6px', border: `1px solid ${tokens.line}`, background: stake === v ? tokens.accent : tokens.bg0, color: tokens.text, cursor: 'pointer', fontSize: '13px' }}>
-              {v}
-            </button>
-          ))}
+    <div className="dice">
+      <div className={`dice-display dice-display--${phase}`}>
+        <div className="dice-display-glow" aria-hidden="true" />
+        <div className="dice-display-number">{display === null ? '—' : display}</div>
+        <div className="dice-display-caption">
+          {phase === 'win' && outcome && `Won ${outcome.payout.toLocaleString()} chips`}
+          {phase === 'lose' && 'No luck this time'}
+          {phase === 'rolling' && 'Rolling…'}
+          {phase === 'idle' && `Roll ${direction} ${target} to win`}
         </div>
       </div>
 
-      <div style={{ background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '20px', marginBottom: '16px' }}>
-        <label style={{ color: tokens.textDim, fontSize: '14px', display: 'block', marginBottom: '8px' }}>Target: {target}</label>
-        <input type="range" value={target} onChange={(e) => setTarget(parseInt(e.target.value))} min={1} max={98}
-          style={{ width: '100%', accentColor: tokens.accent }}
+      <Panel className="dice-controls">
+        <div className="dice-slider-head">
+          <span className="dice-slider-label">Target</span>
+          <span className="dice-slider-value">{target}</span>
+        </div>
+        <input
+          className="dice-slider"
+          type="range"
+          min={1}
+          max={98}
+          value={target}
+          disabled={rolling}
+          onChange={(e) => setTarget(parseInt(e.target.value, 10))}
+          style={{ background: trackStyle }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', gap: '8px' }}>
+        <div className="dice-direction">
           {(['under', 'over'] as const).map((d) => (
-            <button key={d} onClick={() => setDirection(d)}
-              style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: direction === d ? tokens.accent : tokens.bg0, color: tokens.text, cursor: 'pointer', fontWeight: direction === d ? 'bold' : 'normal', fontSize: '16px' }}>
-              Roll {d === 'under' ? 'Under' : 'Over'} {target}
+            <button
+              key={d}
+              className={direction === d ? 'dice-dir-btn dice-dir-btn--active' : 'dice-dir-btn'}
+              disabled={rolling}
+              onClick={() => setDirection(d)}
+            >
+              Roll {d === 'under' ? 'Under' : 'Over'}
             </button>
           ))}
         </div>
+      </Panel>
+
+      <div className="dice-readout">
+        <div className="dice-stat">
+          <span className="dice-stat-label">Chance</span>
+          <span className="dice-stat-value">{winChance}%</span>
+        </div>
+        <div className="dice-stat">
+          <span className="dice-stat-label">Multiplier</span>
+          <span className="dice-stat-value">{multiplier.toFixed(2)}×</span>
+        </div>
+        <div className="dice-stat">
+          <span className="dice-stat-label">Payout</span>
+          <span className="dice-stat-value dice-stat-value--accent">
+            {potentialPayout.toLocaleString()}
+          </span>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '16px', marginBottom: '16px' }}>
-        <div><div style={{ color: tokens.textDim, fontSize: '12px' }}>Win Chance</div><div style={{ color: tokens.text, fontSize: '18px', fontWeight: 'bold' }}>{winChance}%</div></div>
-        <div><div style={{ color: tokens.textDim, fontSize: '12px' }}>Multiplier</div><div style={{ color: tokens.text, fontSize: '18px', fontWeight: 'bold' }}>{multiplier}x</div></div>
-        <div><div style={{ color: tokens.textDim, fontSize: '12px' }}>Payout</div><div style={{ color: tokens.accent, fontSize: '18px', fontWeight: 'bold' }}>{potentialPayout}</div></div>
-      </div>
+      <Panel>
+        <StakeInput stake={stake} balance={balance} onChange={setStake} disabled={rolling} />
+      </Panel>
 
-      <button onClick={handlePlay} disabled={loading || stake > balance || stake < 1}
-        style={{ width: '100%', padding: '16px', borderRadius: tokens.radiusCard, border: 'none', background: loading ? tokens.line : tokens.accent, color: '#fff', fontSize: '18px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}>
-        {loading ? 'Rolling...' : 'Roll Dice'}
-      </button>
+      <Button block loading={rolling} disabled={stake > balance || stake < 1} onClick={handlePlay}>
+        Roll Dice
+      </Button>
 
-      {error && <div style={{ background: '#3a1a2a', borderRadius: tokens.radiusCard, padding: '16px', color: tokens.danger, marginTop: '16px' }}>{error}</div>}
-      {result && <GameResult result={result} />}
+      {error && <div className="dice-error">{error}</div>}
+      {result && (
+        <div className="dice-proof">
+          <FairnessProof proof={result.proof} />
+        </div>
+      )}
     </div>
   );
 }
