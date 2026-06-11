@@ -98,6 +98,14 @@ export interface RevealedSeed {
 export const rotateFairness = () =>
   request<{ revealed: RevealedSeed }>('/fairness/rotate', { method: 'POST' });
 
+/** Server-side re-check of a finished round once its seed has been revealed. */
+export function verifyRound(proof: PublicProof, serverSeed: string): Promise<{ valid: boolean }> {
+  return request<{ valid: boolean }>('/verify', {
+    method: 'POST',
+    body: JSON.stringify({ proof: { ...proof, serverSeed }, maxRoll: proof.maxRoll }),
+  });
+}
+
 export function play(
   gameId: string,
   bet: Record<string, unknown>,

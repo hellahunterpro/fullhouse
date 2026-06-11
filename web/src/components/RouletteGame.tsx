@@ -4,7 +4,7 @@ import { Button, Panel } from '../ui';
 import { getClientSeed } from '../clientSeed';
 import { hapticImpact, hapticResult } from '../haptics';
 import { StakeInput } from './StakeInput';
-import { FairnessProof } from './FairnessProof';
+import { ResultPanel } from './ResultPanel';
 import { WHEEL_ORDER, STEP, pocketColor, wheelTarget } from './rouletteWheel';
 import './RouletteGame.css';
 
@@ -109,10 +109,10 @@ function Wheel({ rotation, spinning }: { rotation: number; spinning: boolean }) 
 
 interface Props {
   balance: number;
-  onBalanceUpdate: (b: number) => void;
+  onResult: (res: PlayResult) => void;
 }
 
-export function RouletteGame({ balance, onBalanceUpdate }: Props) {
+export function RouletteGame({ balance, onResult }: Props) {
   const [stake, setStake] = useState(100);
   const [betType, setBetType] = useState<BetType>('red');
   const [straightNumber, setStraightNumber] = useState<number | null>(null);
@@ -154,7 +154,7 @@ export function RouletteGame({ balance, onBalanceUpdate }: Props) {
       const settle = () => {
         setResult(res);
         setPhase(outcome.win ? 'win' : 'lose');
-        onBalanceUpdate(res.balanceAfter);
+        onResult(res);
         hapticResult(outcome.win);
       };
 
@@ -173,7 +173,7 @@ export function RouletteGame({ balance, onBalanceUpdate }: Props) {
       setError(err instanceof Error ? err.message : 'Error');
       hapticResult(false);
     }
-  }, [stake, betType, straightNumber, onBalanceUpdate]);
+  }, [stake, betType, straightNumber, onResult]);
 
   const outcome = result ? (result.outcome as unknown as RouletteOutcome) : null;
   const betLabel =
@@ -268,7 +268,7 @@ export function RouletteGame({ balance, onBalanceUpdate }: Props) {
       {error && <div className="roulette-error">{error}</div>}
       {result && (
         <div className="roulette-proof">
-          <FairnessProof proof={result.proof} />
+          <ResultPanel result={result} />
         </div>
       )}
     </div>

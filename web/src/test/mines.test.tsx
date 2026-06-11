@@ -53,7 +53,7 @@ describe('mines screen', () => {
       balanceAfter: 900,
       proof: { serverSeedHash: 'h', maxRoll: 4294967296, clientSeeds: ['s'], nonce: 1, combinedHmac: 'm', roll: 7 },
     });
-    render(<MinesGame balance={1000} onBalanceUpdate={() => {}} />);
+    render(<MinesGame balance={1000} onResult={() => {}} />);
 
     fireEvent.click(screen.getByTestId('tile-0'));
     fireEvent.click(screen.getByTestId('tile-3'));
@@ -86,8 +86,8 @@ describe('mines screen', () => {
       balanceAfter: 1030,
       proof: { serverSeedHash: 'h', maxRoll: 4294967296, clientSeeds: ['s'], nonce: 2, combinedHmac: 'm', roll: 9 },
     });
-    const onBalance = vi.fn();
-    render(<MinesGame balance={1000} onBalanceUpdate={onBalance} />);
+    const onResult = vi.fn();
+    render(<MinesGame balance={1000} onResult={onResult} />);
 
     fireEvent.click(screen.getByTestId('tile-0'));
     fireEvent.click(screen.getByTestId('tile-1'));
@@ -100,14 +100,14 @@ describe('mines screen', () => {
     expect(screen.getByTestId('tile-2').dataset.state).toBe('gem');
     // Mines stay hidden when the round is won.
     expect(screen.getByTestId('tile-20').dataset.state).toBe('hidden');
-    expect(onBalance).toHaveBeenCalledWith(1030);
+    expect(onResult).toHaveBeenCalledWith(expect.objectContaining({ balanceAfter: 1030 }));
     // Play Again resets the board.
     fireEvent.click(screen.getByRole('button', { name: /Play Again/ }));
     expect(screen.getByTestId('tile-0').dataset.state).toBe('hidden');
   });
 
   it('limits picks to the safe tile count', () => {
-    render(<MinesGame balance={1000} onBalanceUpdate={() => {}} />);
+    render(<MinesGame balance={1000} onResult={() => {}} />);
     // With default 5 mines there are 20 safe tiles; picking all 25 stops at 20.
     for (let i = 0; i < 25; i++) {
       fireEvent.click(screen.getByTestId(`tile-${i}`));

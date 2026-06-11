@@ -52,22 +52,22 @@ describe('screen smoke tests', () => {
   });
 
   it('dice screen renders without crashing', () => {
-    render(<DiceGame balance={1000} onBalanceUpdate={noop} />);
+    render(<DiceGame balance={1000} onResult={noop} />);
     expect(screen.getByText(/Roll Dice/i)).toBeTruthy();
   });
 
   it('coinflip screen renders without crashing', () => {
-    render(<CoinflipGame balance={1000} onBalanceUpdate={noop} />);
+    render(<CoinflipGame balance={1000} onResult={noop} />);
     expect(screen.getByText(/Flip Coin/i)).toBeTruthy();
   });
 
   it('roulette screen renders without crashing', () => {
-    render(<RouletteGame balance={1000} onBalanceUpdate={noop} />);
+    render(<RouletteGame balance={1000} onResult={noop} />);
     expect(screen.getByText(/Spin Wheel/i)).toBeTruthy();
   });
 
   it('mines screen renders without crashing', () => {
-    render(<MinesGame balance={1000} onBalanceUpdate={noop} />);
+    render(<MinesGame balance={1000} onResult={noop} />);
     expect(screen.getByRole('button', { name: 'Reveal' })).toBeTruthy();
   });
 

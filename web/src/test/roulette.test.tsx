@@ -84,7 +84,7 @@ describe('roulette screen', () => {
       balanceAfter: 900,
       proof: { serverSeedHash: 'h', maxRoll: 37, clientSeeds: ['s'], nonce: 1, combinedHmac: 'm', roll: 17 },
     });
-    render(<RouletteGame balance={1000} onBalanceUpdate={() => {}} />);
+    render(<RouletteGame balance={1000} onResult={() => {}} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Spin Wheel/ }));
 
@@ -95,7 +95,7 @@ describe('roulette screen', () => {
   });
 
   it('straight bets require a number before spinning', () => {
-    render(<RouletteGame balance={1000} onBalanceUpdate={() => {}} />);
+    render(<RouletteGame balance={1000} onResult={() => {}} />);
     // Pick the straight-number 7 from the grid, then spin.
     fireEvent.click(screen.getByRole('button', { name: '7' }));
     expect(screen.getByText('Number 7')).toBeTruthy();
@@ -110,13 +110,13 @@ describe('roulette screen', () => {
       balanceAfter: 1100,
       proof: { serverSeedHash: 'h', maxRoll: 37, clientSeeds: ['s'], nonce: 2, combinedHmac: 'm', roll: 32 },
     });
-    const onBalance = vi.fn();
-    render(<RouletteGame balance={1000} onBalanceUpdate={onBalance} />);
+    const onResult = vi.fn();
+    render(<RouletteGame balance={1000} onResult={onResult} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Spin Wheel/ }));
 
     expect(await screen.findByText(/Won 200 chips/)).toBeTruthy();
-    expect(onBalance).toHaveBeenCalledWith(1100);
+    expect(onResult).toHaveBeenCalledWith(expect.objectContaining({ balanceAfter: 1100 }));
     const wheel = screen.getByTestId('wheel');
     expect(landedPocket(parseFloat(wheel.getAttribute('data-rotation') || '0'))).toBe(32);
   });

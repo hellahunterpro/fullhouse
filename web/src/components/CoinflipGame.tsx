@@ -4,13 +4,13 @@ import { Button, Panel } from '../ui';
 import { getClientSeed } from '../clientSeed';
 import { hapticImpact, hapticResult } from '../haptics';
 import { StakeInput } from './StakeInput';
-import { FairnessProof } from './FairnessProof';
+import { ResultPanel } from './ResultPanel';
 import { flipTarget } from './flipMath';
 import './CoinflipGame.css';
 
 interface Props {
   balance: number;
-  onBalanceUpdate: (b: number) => void;
+  onResult: (res: PlayResult) => void;
 }
 
 interface CoinflipOutcome {
@@ -47,7 +47,7 @@ function CoinFace({ side }: { side: 'heads' | 'tails' }) {
   );
 }
 
-export function CoinflipGame({ balance, onBalanceUpdate }: Props) {
+export function CoinflipGame({ balance, onResult }: Props) {
   const [stake, setStake] = useState(100);
   const [choice, setChoice] = useState<'heads' | 'tails'>('heads');
   const [result, setResult] = useState<PlayResult | null>(null);
@@ -75,7 +75,7 @@ export function CoinflipGame({ balance, onBalanceUpdate }: Props) {
       const settle = () => {
         setResult(res);
         setPhase(outcome.win ? 'win' : 'lose');
-        onBalanceUpdate(res.balanceAfter);
+        onResult(res);
         hapticResult(outcome.win);
       };
 
@@ -94,7 +94,7 @@ export function CoinflipGame({ balance, onBalanceUpdate }: Props) {
       setError(err instanceof Error ? err.message : 'Error');
       hapticResult(false);
     }
-  }, [stake, choice, onBalanceUpdate]);
+  }, [stake, choice, onResult]);
 
   const outcome = result ? (result.outcome as unknown as CoinflipOutcome) : null;
 
@@ -166,7 +166,7 @@ export function CoinflipGame({ balance, onBalanceUpdate }: Props) {
       {error && <div className="coin-error">{error}</div>}
       {result && (
         <div className="coin-proof">
-          <FairnessProof proof={result.proof} />
+          <ResultPanel result={result} />
         </div>
       )}
     </div>

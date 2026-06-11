@@ -63,7 +63,7 @@ describe('coinflip screen', () => {
       balanceAfter: 900,
       proof: { serverSeedHash: 'h', maxRoll: 2, clientSeeds: ['s'], nonce: 1, combinedHmac: 'm', roll: 1 },
     });
-    render(<CoinflipGame balance={1000} onBalanceUpdate={() => {}} />);
+    render(<CoinflipGame balance={1000} onResult={() => {}} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Flip Coin/ }));
 
@@ -82,12 +82,12 @@ describe('coinflip screen', () => {
       balanceAfter: 1098,
       proof: { serverSeedHash: 'h', maxRoll: 2, clientSeeds: ['s'], nonce: 2, combinedHmac: 'm', roll: 0 },
     });
-    const onBalance = vi.fn();
-    render(<CoinflipGame balance={1000} onBalanceUpdate={onBalance} />);
+    const onResult = vi.fn();
+    render(<CoinflipGame balance={1000} onResult={onResult} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Flip Coin/ }));
 
     expect(await screen.findByText(/HEADS — won 198 chips/)).toBeTruthy();
-    expect(onBalance).toHaveBeenCalledWith(1098);
+    expect(onResult).toHaveBeenCalledWith(expect.objectContaining({ balanceAfter: 1098 }));
   });
 });

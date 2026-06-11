@@ -4,12 +4,12 @@ import { Button, Panel } from '../ui';
 import { getClientSeed } from '../clientSeed';
 import { hapticImpact, hapticResult } from '../haptics';
 import { StakeInput } from './StakeInput';
-import { FairnessProof } from './FairnessProof';
+import { ResultPanel } from './ResultPanel';
 import './DiceGame.css';
 
 interface Props {
   balance: number;
-  onBalanceUpdate: (b: number) => void;
+  onResult: (res: PlayResult) => void;
 }
 
 interface DiceOutcome {
@@ -30,7 +30,7 @@ function previewMultiplier(target: number, direction: 'under' | 'over'): number 
 
 const SCRAMBLE_MS = 700;
 
-export function DiceGame({ balance, onBalanceUpdate }: Props) {
+export function DiceGame({ balance, onResult }: Props) {
   const [stake, setStake] = useState(100);
   const [target, setTarget] = useState(50);
   const [direction, setDirection] = useState<'under' | 'over'>('under');
@@ -61,10 +61,10 @@ export function DiceGame({ balance, onBalanceUpdate }: Props) {
       setDisplay(outcome.roll);
       setResult(res);
       setPhase(outcome.win ? 'win' : 'lose');
-      onBalanceUpdate(res.balanceAfter);
+      onResult(res);
       hapticResult(outcome.win);
     },
-    [onBalanceUpdate],
+    [onResult],
   );
 
   const handlePlay = useCallback(async () => {
@@ -173,7 +173,7 @@ export function DiceGame({ balance, onBalanceUpdate }: Props) {
       {error && <div className="dice-error">{error}</div>}
       {result && (
         <div className="dice-proof">
-          <FairnessProof proof={result.proof} />
+          <ResultPanel result={result} />
         </div>
       )}
     </div>

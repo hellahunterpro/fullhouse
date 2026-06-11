@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchMe, type UserInfo } from './api';
+import { fetchMe, type UserInfo, type PlayResult, type PublicProof } from './api';
 import { tokens, initTelegram } from './theme';
 import { ScreenHeader } from './ui';
 import { Lobby } from './components/Lobby';
@@ -9,6 +9,7 @@ import { RouletteGame } from './components/RouletteGame';
 import { MinesGame } from './components/MinesGame';
 import { History } from './components/History';
 import { Leaderboard } from './components/Leaderboard';
+import { FairnessSheet } from './components/FairnessSheet';
 import './App.css';
 
 type Screen = 'lobby' | 'dice' | 'coinflip' | 'roulette' | 'mines' | 'history' | 'leaderboard';
@@ -29,6 +30,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState<Screen>('lobby');
+  const [lastProof, setLastProof] = useState<PublicProof | null>(null);
+  const [fairnessOpen, setFairnessOpen] = useState(false);
 
   useEffect(() => {
     initTelegram();
@@ -44,7 +47,10 @@ export function App() {
       });
   }, []);
 
-  const handleBalanceUpdate = useCallback((b: number) => setBalance(b), []);
+  const handleResult = useCallback((res: PlayResult) => {
+    setBalance(res.balanceAfter);
+    setLastProof(res.proof);
+  }, []);
   const handleBalanceDelta = useCallback((d: number) => setBalance((b) => (b ?? 0) + d), []);
 
   const renderScreen = () => {
@@ -59,12 +65,13 @@ export function App() {
             bonusStreak={me.dailyBonus?.streak ?? 0}
             onNavigate={setScreen}
             onBalanceDelta={handleBalanceDelta}
+            onOpenFairness={() => setFairnessOpen(true)}
           />
         );
-      case 'dice': return <DiceGame balance={balance} onBalanceUpdate={handleBalanceUpdate} />;
-      case 'coinflip': return <CoinflipGame balance={balance} onBalanceUpdate={handleBalanceUpdate} />;
-      case 'roulette': return <RouletteGame balance={balance} onBalanceUpdate={handleBalanceUpdate} />;
-      case 'mines': return <MinesGame balance={balance} onBalanceUpdate={handleBalanceUpdate} />;
+      case 'dice': return <DiceGame balance={balance} onResult={handleResult} />;
+      case 'coinflip': return <CoinflipGame balance={balance} onResult={handleResult} />;
+      case 'roulette': return <RouletteGame balance={balance} onResult={handleResult} />;
+      case 'mines': return <MinesGame balance={balance} onResult={handleResult} />;
       case 'history': return <History />;
       case 'leaderboard': return <Leaderboard />;
     }
@@ -88,6 +95,12 @@ export function App() {
       )}
 
       {!loading && !error && renderScreen()}
+
+      <FairnessSheet
+        open={fairnessOpen}
+        onClose={() => setFairnessOpen(false)}
+        lastProof={lastProof}
+      />
     </div>
   );
 }

@@ -34,14 +34,14 @@ describe('dice screen', () => {
       balanceAfter: 1098,
       proof: { serverSeedHash: 'h', maxRoll: 100, clientSeeds: ['s'], nonce: 1, combinedHmac: 'm', roll: 42 },
     });
-    const onBalance = vi.fn();
-    render(<DiceGame balance={1000} onBalanceUpdate={onBalance} />);
+    const onResult = vi.fn();
+    render(<DiceGame balance={1000} onResult={onResult} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Roll Dice/ }));
 
     expect(await screen.findByText('42')).toBeTruthy();
     expect(screen.getByText(/Won 198 chips/)).toBeTruthy();
-    expect(onBalance).toHaveBeenCalledWith(1098);
+    expect(onResult).toHaveBeenCalledWith(expect.objectContaining({ balanceAfter: 1098 }));
   });
 
   it('shows the lose state on a losing roll', async () => {
@@ -52,7 +52,7 @@ describe('dice screen', () => {
       balanceAfter: 900,
       proof: { serverSeedHash: 'h', maxRoll: 100, clientSeeds: ['s'], nonce: 2, combinedHmac: 'm', roll: 87 },
     });
-    render(<DiceGame balance={1000} onBalanceUpdate={() => {}} />);
+    render(<DiceGame balance={1000} onResult={() => {}} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Roll Dice/ }));
 
@@ -62,7 +62,7 @@ describe('dice screen', () => {
 
   it('surfaces server errors and resets', async () => {
     playMock.mockRejectedValue(new Error('Insufficient balance'));
-    render(<DiceGame balance={1000} onBalanceUpdate={() => {}} />);
+    render(<DiceGame balance={1000} onResult={() => {}} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Roll Dice/ }));
 

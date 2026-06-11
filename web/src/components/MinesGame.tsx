@@ -4,7 +4,7 @@ import { Button, Panel } from '../ui';
 import { getClientSeed } from '../clientSeed';
 import { hapticImpact, hapticResult } from '../haptics';
 import { StakeInput } from './StakeInput';
-import { FairnessProof } from './FairnessProof';
+import { ResultPanel } from './ResultPanel';
 import './MinesGame.css';
 
 const GRID_SIZE = 25;
@@ -32,7 +32,7 @@ interface MinesOutcome {
 
 interface Props {
   balance: number;
-  onBalanceUpdate: (b: number) => void;
+  onResult: (res: PlayResult) => void;
 }
 
 function GemIcon() {
@@ -66,7 +66,7 @@ function MineIcon() {
 
 type Phase = 'picking' | 'waiting' | 'revealing' | 'win' | 'lose';
 
-export function MinesGame({ balance, onBalanceUpdate }: Props) {
+export function MinesGame({ balance, onResult }: Props) {
   const [stake, setStake] = useState(100);
   const [mineCount, setMineCount] = useState(5);
   const [picks, setPicks] = useState<number[]>([]);
@@ -130,7 +130,7 @@ export function MinesGame({ balance, onBalanceUpdate }: Props) {
         setResult(res);
         if (outcome.hitMine) setShowAllMines(true);
         setPhase(outcome.win ? 'win' : 'lose');
-        onBalanceUpdate(res.balanceAfter);
+        onResult(res);
         hapticResult(outcome.win);
       };
 
@@ -148,7 +148,7 @@ export function MinesGame({ balance, onBalanceUpdate }: Props) {
       setError(err instanceof Error ? err.message : 'Error');
       hapticResult(false);
     }
-  }, [picks, stake, mineCount, onBalanceUpdate]);
+  }, [picks, stake, mineCount, onResult]);
 
   const outcome = result ? (result.outcome as unknown as MinesOutcome) : null;
   const mineSet = outcome ? new Set(outcome.minePositions) : null;
@@ -271,7 +271,7 @@ export function MinesGame({ balance, onBalanceUpdate }: Props) {
       {error && <div className="mines-error">{error}</div>}
       {result && finished && (
         <div className="mines-proof">
-          <FairnessProof proof={result.proof} />
+          <ResultPanel result={result} />
         </div>
       )}
     </div>
