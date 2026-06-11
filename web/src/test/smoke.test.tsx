@@ -68,7 +68,7 @@ describe('screen smoke tests', () => {
 
   it('mines screen renders without crashing', () => {
     render(<MinesGame balance={1000} onBalanceUpdate={noop} />);
-    expect(screen.getByText(/Reveal/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reveal' })).toBeTruthy();
   });
 
   it('history renders empty state', async () => {
