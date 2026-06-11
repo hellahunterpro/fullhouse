@@ -14,6 +14,9 @@ export interface Env {
   BOT_TOKEN: string;
   DEV_MODE?: string;
   DUEL: DurableObjectNamespace;
+  /** Test/ops overrides for the duel state machine timers (milliseconds). */
+  DUEL_TIMEOUT_MS?: string;
+  DUEL_CLEANUP_MS?: string;
 }
 
 const DUEL_ID_RE = /^[A-Za-z0-9_-]{4,64}$/;
@@ -66,6 +69,15 @@ export default {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Auth failed';
         return json({ error: message }, 401);
+      }
+
+      // When the Mini App is opened through a duel deep link, the duel id is
+      // part of the signed initData (start_param). It must match the requested
+      // duel — the unsigned query param alone is never trusted for link joins.
+      const initData = url.searchParams.get('initData') ?? '';
+      const startParam = new URLSearchParams(initData).get('start_param');
+      if (startParam?.startsWith('duel_') && startParam.slice(5) !== duelId) {
+        return json({ error: 'Duel id does not match the signed start_param' }, 403);
       }
 
       // Hand the authenticated identity to the DO via internal headers; the

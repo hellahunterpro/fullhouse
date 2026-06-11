@@ -5,6 +5,7 @@ export async function createValidInitData(
   botToken: string,
   user: { id: number; username?: string; first_name?: string },
   authDate?: number,
+  extraParams?: Record<string, string>,
 ): Promise<string> {
   const enc = new TextEncoder();
   const now = authDate ?? Math.floor(Date.now() / 1000);
@@ -13,6 +14,9 @@ export async function createValidInitData(
   params.set('auth_date', String(now));
   params.set('user', JSON.stringify(user));
   params.set('query_id', 'test-query');
+  for (const [k, v] of Object.entries(extraParams ?? {})) {
+    params.set(k, v);
+  }
 
   const sorted = Array.from(params.entries())
     .sort(([a], [b]) => a.localeCompare(b))

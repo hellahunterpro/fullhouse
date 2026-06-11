@@ -12,5 +12,8 @@ export const BOOTSTRAP_STATEMENTS: string[] = [
   "CREATE INDEX IF NOT EXISTS idx_audit_event_type ON audit_events(event_type)",
   "CREATE TABLE IF NOT EXISTS server_seeds (\n  id          TEXT PRIMARY KEY,\n  user_id     TEXT NOT NULL REFERENCES users(id),\n  seed        TEXT NOT NULL,\n  seed_hash   TEXT NOT NULL,\n  nonce       INTEGER NOT NULL DEFAULT 0,\n  status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revealed')),\n  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),\n  revealed_at TEXT\n)",
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_server_seeds_active_user ON server_seeds(user_id) WHERE status = 'active'",
-  "CREATE INDEX IF NOT EXISTS idx_server_seeds_user ON server_seeds(user_id)"
+  "CREATE INDEX IF NOT EXISTS idx_server_seeds_user ON server_seeds(user_id)",
+  "CREATE TABLE IF NOT EXISTS duels (\n  id TEXT PRIMARY KEY,\n  creator_id TEXT NOT NULL REFERENCES users(id),\n  opponent_id TEXT REFERENCES users(id),\n  game TEXT NOT NULL,\n  stake INTEGER NOT NULL CHECK (stake > 0),\n  state TEXT NOT NULL DEFAULT 'created',\n  round INTEGER NOT NULL DEFAULT 0,\n  winner_id TEXT REFERENCES users(id),\n  server_seed_hash TEXT,\n  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),\n  resolved_at TEXT\n)",
+  "CREATE INDEX IF NOT EXISTS idx_duels_creator ON duels(creator_id, created_at)",
+  "CREATE INDEX IF NOT EXISTS idx_duels_opponent ON duels(opponent_id, created_at)"
 ];
