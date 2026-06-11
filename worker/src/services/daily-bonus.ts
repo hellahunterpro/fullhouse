@@ -11,6 +11,37 @@ export interface DailyBonusResult {
   nextAvailable: string;
 }
 
+export interface DailyBonusStatus {
+  available: boolean;
+  streak: number;
+}
+
+/** Read-only claim status for today, without mutating anything. */
+export async function getDailyBonusStatus(
+  db: D1Database,
+  userId: string,
+): Promise<DailyBonusStatus> {
+  const today = new Date().toISOString().slice(0, 10);
+  const lastClaim = await db
+    .prepare(
+      `SELECT payload FROM audit_events
+       WHERE user_id = ? AND event_type = 'daily_bonus'
+       ORDER BY created_at DESC LIMIT 1`,
+    )
+    .bind(userId)
+    .first<{ payload: string }>();
+
+  if (!lastClaim) return { available: true, streak: 0 };
+
+  const p = JSON.parse(lastClaim.payload) as { date: string; streak: number };
+  if (p.date === today) return { available: false, streak: p.streak };
+
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const continuing = p.date === yesterday.toISOString().slice(0, 10);
+  return { available: true, streak: continuing ? p.streak : 0 };
+}
+
 export async function claimDailyBonus(
   db: D1Database,
   userId: string,

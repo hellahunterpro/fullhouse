@@ -31,6 +31,7 @@ export interface UserInfo {
   user: { id: string; tgId: number; username: string; firstName: string };
   balance: number;
   fairness: Commitment;
+  dailyBonus: { available: boolean; streak: number };
 }
 
 export interface PublicProof {

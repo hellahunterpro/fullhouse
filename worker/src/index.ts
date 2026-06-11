@@ -10,7 +10,7 @@ import { trackAuth } from './services/analytics.js';
 import { verify } from './services/rng.js';
 import { getHistory } from './services/history.js';
 import { getLeaderboard } from './services/leaderboard.js';
-import { claimDailyBonus } from './services/daily-bonus.js';
+import { claimDailyBonus, getDailyBonusStatus } from './services/daily-bonus.js';
 import { getCommitment, rotateSeed } from './services/fairness.js';
 import { ensureSchema } from './db/bootstrap.js';
 import type { FairnessProof } from './services/rng.js';
@@ -77,10 +77,12 @@ export default {
         await trackAuth(env.DB, user.id, user.isNewUser, user.tgId);
         const balance = await getBalance(env.DB, user.walletId);
         const fairness = await getCommitment(env.DB, user.id);
+        const dailyBonus = await getDailyBonusStatus(env.DB, user.id);
         return json({
           user: { id: user.id, tgId: user.tgId, username: user.username, firstName: user.firstName },
           balance,
           fairness,
+          dailyBonus,
         });
       }
 

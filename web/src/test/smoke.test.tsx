@@ -16,6 +16,7 @@ vi.mock('../api', () => ({
       user: { id: 'u1', tgId: 1, username: 'tester', firstName: 'Test' },
       balance: 5000,
       fairness: { id: 'c1', seedHash: 'a'.repeat(64), nonce: 0 },
+      dailyBonus: { available: true, streak: 2 },
     }),
   ),
   claimDailyBonus: vi.fn(() =>
@@ -41,8 +42,13 @@ describe('screen smoke tests', () => {
         <App />
       </ToastProvider>,
     );
-    expect(await screen.findByText(/Welcome, tester/)).toBeTruthy();
+    expect(await screen.findByText(/Welcome back, tester/)).toBeTruthy();
     expect(screen.getByText('Full House')).toBeTruthy();
+    expect(screen.getByText(/Daily bonus ready/)).toBeTruthy();
+    expect(screen.getByText(/2-day streak/)).toBeTruthy();
+    expect(screen.getByText(/Provably fair/)).toBeTruthy();
+    expect(screen.getByText('Dice')).toBeTruthy();
+    expect(screen.getByText('Mines')).toBeTruthy();
   });
 
   it('dice screen renders without crashing', () => {
