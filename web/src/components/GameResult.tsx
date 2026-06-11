@@ -18,8 +18,8 @@ export function GameResult({ result }: Props) {
 
   return (
     <div style={{
-      background: tokens.bgSecondary,
-      borderRadius: tokens.radius,
+      background: tokens.bg1,
+      borderRadius: tokens.radiusCard,
       padding: '20px',
       textAlign: 'center',
       marginTop: '16px',
@@ -28,25 +28,25 @@ export function GameResult({ result }: Props) {
         <div style={{
           fontSize: '48px',
           fontWeight: 'bold',
-          color: win ? tokens.success : tokens.danger,
+          color: win ? tokens.accent : tokens.danger,
           marginBottom: '4px',
         }}>
           {display}
         </div>
       )}
       {outcome.color && (
-        <div style={{ fontSize: '14px', color: tokens.textSecondary, marginBottom: '8px' }}>
+        <div style={{ fontSize: '14px', color: tokens.textDim, marginBottom: '8px' }}>
           {outcome.color}
         </div>
       )}
       <div style={{
         fontSize: '20px',
-        color: win ? tokens.success : tokens.danger,
+        color: win ? tokens.accent : tokens.danger,
         marginBottom: '12px',
       }}>
         {win ? `Won ${payout.toLocaleString()} chips!` : 'Lost'}
       </div>
-      <div style={{ fontSize: '13px', color: tokens.textSecondary, marginBottom: '8px' }}>
+      <div style={{ fontSize: '13px', color: tokens.textDim, marginBottom: '8px' }}>
         Balance: {result.balanceAfter.toLocaleString()}
       </div>
       <FairnessProof proof={result.proof} />

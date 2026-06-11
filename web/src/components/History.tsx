@@ -10,23 +10,23 @@ export function History() {
     fetchHistory().then((d) => { setHistory(d.history); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: tokens.textSecondary }}>Loading...</div>;
-  if (history.length === 0) return <div style={{ padding: '40px', textAlign: 'center', color: tokens.textSecondary }}>No games played yet</div>;
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: tokens.textDim }}>Loading...</div>;
+  if (history.length === 0) return <div style={{ padding: '40px', textAlign: 'center', color: tokens.textDim }}>No games played yet</div>;
 
   return (
     <div style={{ padding: '16px' }}>
       {history.map((h, i) => (
         <div key={i} style={{
-          background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '16px', marginBottom: '8px',
+          background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '16px', marginBottom: '8px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
             <div style={{ fontSize: '16px', fontWeight: 'bold', textTransform: 'capitalize' }}>{h.gameId}</div>
-            <div style={{ fontSize: '12px', color: tokens.textSecondary }}>{new Date(h.timestamp).toLocaleString()}</div>
+            <div style={{ fontSize: '12px', color: tokens.textDim }}>{new Date(h.timestamp).toLocaleString()}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '14px', color: tokens.textSecondary }}>Stake: {h.stake}</div>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', color: h.netDelta >= 0 ? tokens.success : tokens.danger }}>
+            <div style={{ fontSize: '14px', color: tokens.textDim }}>Stake: {h.stake}</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: h.netDelta >= 0 ? tokens.accent : tokens.danger }}>
               {h.netDelta >= 0 ? '+' : ''}{h.netDelta}
             </div>
           </div>

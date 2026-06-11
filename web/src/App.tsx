@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchMe, claimDailyBonus } from './api';
-import { tokens, applyTelegramTheme } from './theme';
+import { tokens, initTelegram } from './theme';
 import { DiceGame } from './components/DiceGame';
 import { CoinflipGame } from './components/CoinflipGame';
 import { RouletteGame } from './components/RouletteGame';
 import { MinesGame } from './components/MinesGame';
 import { History } from './components/History';
 import { Leaderboard } from './components/Leaderboard';
+import './App.css';
 
 type Screen = 'lobby' | 'dice' | 'coinflip' | 'roulette' | 'mines' | 'history' | 'leaderboard';
 
@@ -27,7 +28,7 @@ export function App() {
   const [commitment, setCommitment] = useState<string | null>(null);
 
   useEffect(() => {
-    applyTelegramTheme();
+    initTelegram();
     fetchMe()
       .then((data) => { setBalance(data.balance); setUsername(data.user.username || data.user.firstName || 'Player'); setCommitment(data.fairness.seedHash); setLoading(false); })
       .catch((err) => { setError(err.message); setLoading(false); });
@@ -65,45 +66,42 @@ export function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: tokens.bg, color: tokens.text, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${tokens.border}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div className="app">
+      <header className="app-header">
+        <div className="app-header-left">
           {screen !== 'lobby' && (
-            <button onClick={() => setScreen('lobby')}
-              style={{ background: 'none', border: 'none', color: tokens.text, cursor: 'pointer', fontSize: '20px', padding: '4px' }}>
+            <button className="app-header-back" onClick={() => setScreen('lobby')} aria-label="Back">
               ←
             </button>
           )}
-          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Full House</div>
+          <div className="app-header-title">Full House</div>
         </div>
         {balance !== null && (
-          <div style={{ background: tokens.bgSecondary, padding: '6px 14px', borderRadius: '20px', fontSize: '15px', fontWeight: 'bold' }}>
-            {balance.toLocaleString()} chips
-          </div>
+          <div className="balance-pill">{balance.toLocaleString()}</div>
         )}
       </header>
 
       {bonusMsg && (
-        <div style={{ background: '#1a3a2a', padding: '12px', textAlign: 'center', color: tokens.success, fontWeight: 'bold' }}>
+        <div style={{ background: tokens.bg1, padding: '12px', textAlign: 'center', color: tokens.accent, fontWeight: 'bold' }}>
           {bonusMsg}
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', padding: '60px 20px', color: tokens.textSecondary }}>Loading...</div>}
+      {loading && <div style={{ textAlign: 'center', padding: '60px 20px', color: tokens.textDim }}>Loading...</div>}
 
       {error && (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <div style={{ color: tokens.danger, marginBottom: '8px' }}>Failed to connect</div>
-          <div style={{ color: tokens.textSecondary, fontSize: '14px' }}>{error}</div>
+          <div style={{ color: tokens.textDim, fontSize: '14px' }}>{error}</div>
         </div>
       )}
 
       {!loading && !error && balance !== null && screen === 'lobby' && (
         <div style={{ padding: '16px' }}>
-          <div style={{ marginBottom: '16px', color: tokens.textSecondary, fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginBottom: '16px', color: tokens.textDim, fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Welcome, {username}</span>
             <button onClick={handleDailyBonus}
-              style={{ background: tokens.accent, border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+              style={{ background: tokens.accent, border: 'none', color: '#062512', padding: '10px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
               Daily Bonus
             </button>
           </div>
@@ -112,29 +110,29 @@ export function App() {
             {GAMES.map((g) => (
               <button key={g.id} onClick={() => setScreen(g.id)}
                 style={{
-                  background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '20px 16px',
-                  border: 'none', cursor: 'pointer', textAlign: 'center',
+                  background: tokens.bg2, borderRadius: tokens.radiusCard, padding: '20px 16px',
+                  border: `1px solid ${tokens.line}`, cursor: 'pointer', textAlign: 'center',
                 }}>
                 <div style={{ fontSize: '32px', marginBottom: '8px' }}>{g.icon}</div>
                 <div style={{ fontSize: '16px', fontWeight: 'bold', color: tokens.text, marginBottom: '4px' }}>{g.name}</div>
-                <div style={{ fontSize: '12px', color: tokens.textSecondary }}>{g.desc}</div>
+                <div style={{ fontSize: '12px', color: tokens.textDim }}>{g.desc}</div>
               </button>
             ))}
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
             <button onClick={() => setScreen('history')}
-              style={{ flex: 1, background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '14px', border: 'none', cursor: 'pointer', color: tokens.text, fontSize: '15px', fontWeight: 'bold' }}>
+              style={{ flex: 1, background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '14px', border: `1px solid ${tokens.line}`, cursor: 'pointer', color: tokens.text, fontSize: '15px', fontWeight: 'bold' }}>
               History
             </button>
             <button onClick={() => setScreen('leaderboard')}
-              style={{ flex: 1, background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '14px', border: 'none', cursor: 'pointer', color: tokens.text, fontSize: '15px', fontWeight: 'bold' }}>
+              style={{ flex: 1, background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '14px', border: `1px solid ${tokens.line}`, cursor: 'pointer', color: tokens.text, fontSize: '15px', fontWeight: 'bold' }}>
               Leaderboard
             </button>
           </div>
 
           {commitment && (
-            <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '11px', color: tokens.textSecondary, wordBreak: 'break-all' }}>
+            <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '11px', color: tokens.textDim, wordBreak: 'break-all' }}>
               Provably fair · committed seed {commitment.slice(0, 16)}…
             </div>
           )}

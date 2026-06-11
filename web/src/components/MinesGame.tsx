@@ -47,17 +47,17 @@ export function MinesGame({ balance, onBalanceUpdate }: Props) {
 
   return (
     <div style={{ padding: '16px' }}>
-      <div style={{ background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '20px', marginBottom: '16px' }}>
+      <div style={{ background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '20px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
           <div style={{ flex: 1 }}>
-            <label style={{ color: tokens.textSecondary, fontSize: '14px', display: 'block', marginBottom: '4px' }}>Stake</label>
+            <label style={{ color: tokens.textDim, fontSize: '14px', display: 'block', marginBottom: '4px' }}>Stake</label>
             <input type="number" value={stake}
               onChange={(e) => setStake(Math.max(1, Math.min(balance, parseInt(e.target.value) || 0)))}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: `1px solid ${tokens.border}`, background: tokens.bg, color: tokens.text, fontSize: '16px', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: `1px solid ${tokens.line}`, background: tokens.bg0, color: tokens.text, fontSize: '16px', boxSizing: 'border-box' }}
             />
           </div>
           <div style={{ flex: 1 }}>
-            <label style={{ color: tokens.textSecondary, fontSize: '14px', display: 'block', marginBottom: '4px' }}>Mines: {mineCount}</label>
+            <label style={{ color: tokens.textDim, fontSize: '14px', display: 'block', marginBottom: '4px' }}>Mines: {mineCount}</label>
             <input type="range" value={mineCount} onChange={(e) => { setMineCount(parseInt(e.target.value)); setPicks(new Set()); setResult(null); }} min={1} max={24}
               style={{ width: '100%', accentColor: tokens.accent, marginTop: '8px' }}
             />
@@ -71,11 +71,11 @@ export function MinesGame({ balance, onBalanceUpdate }: Props) {
           const isMine = minePositions?.has(i);
           const revealed = result !== null;
 
-          let bg = tokens.bgSecondary;
+          let bg: string = tokens.bg1;
           let content = '';
           if (revealed && isMine) { bg = '#5a1a1a'; content = '💣'; }
           else if (revealed && isPicked && !isMine) { bg = '#1a3a2a'; content = '💎'; }
-          else if (revealed && !isPicked && !isMine) { bg = tokens.bgSecondary; content = ''; }
+          else if (revealed && !isPicked && !isMine) { bg = tokens.bg1; content = ''; }
           else if (isPicked) { bg = tokens.accent; content = '✓'; }
 
           return (
@@ -92,25 +92,25 @@ export function MinesGame({ balance, onBalanceUpdate }: Props) {
         })}
       </div>
 
-      <div style={{ background: tokens.bgSecondary, borderRadius: tokens.radius, padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
-        <span style={{ color: tokens.textSecondary, fontSize: '14px' }}>
+      <div style={{ background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '12px', marginBottom: '16px', textAlign: 'center' }}>
+        <span style={{ color: tokens.textDim, fontSize: '14px' }}>
           {picks.size} / {maxPicks} tiles selected | {mineCount} mines
         </span>
       </div>
 
       {!result ? (
         <button onClick={handlePlay} disabled={loading || stake > balance || stake < 1 || picks.size === 0}
-          style={{ width: '100%', padding: '16px', borderRadius: tokens.radius, border: 'none', background: loading ? tokens.border : tokens.accent, color: '#fff', fontSize: '18px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}>
+          style={{ width: '100%', padding: '16px', borderRadius: tokens.radiusCard, border: 'none', background: loading ? tokens.line : tokens.accent, color: '#fff', fontSize: '18px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}>
           {loading ? 'Revealing...' : 'Reveal'}
         </button>
       ) : (
         <button onClick={resetGame}
-          style={{ width: '100%', padding: '16px', borderRadius: tokens.radius, border: 'none', background: tokens.accent, color: '#fff', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
+          style={{ width: '100%', padding: '16px', borderRadius: tokens.radiusCard, border: 'none', background: tokens.accent, color: '#fff', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
           Play Again
         </button>
       )}
 
-      {error && <div style={{ background: '#3a1a2a', borderRadius: tokens.radius, padding: '16px', color: tokens.danger, marginTop: '16px' }}>{error}</div>}
+      {error && <div style={{ background: '#3a1a2a', borderRadius: tokens.radiusCard, padding: '16px', color: tokens.danger, marginTop: '16px' }}>{error}</div>}
       {result && <GameResult result={result} />}
     </div>
   );

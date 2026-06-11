@@ -22,7 +22,7 @@ export function FairnessProof({ proof }: Props) {
         style={{
           background: 'none',
           border: 'none',
-          color: tokens.textSecondary,
+          color: tokens.textDim,
           cursor: 'pointer',
           textDecoration: 'underline',
           fontSize: '13px',
@@ -37,7 +37,7 @@ export function FairnessProof({ proof }: Props) {
             marginTop: '12px',
             textAlign: 'left',
             fontSize: '11px',
-            color: tokens.textSecondary,
+            color: tokens.textDim,
             wordBreak: 'break-all',
             lineHeight: '1.6',
           }}
@@ -54,7 +54,7 @@ export function FairnessProof({ proof }: Props) {
           <div>
             <strong style={{ color: tokens.text }}>HMAC:</strong> {proof.combinedHmac}
           </div>
-          <div style={{ marginTop: '8px', color: tokens.textSecondary }}>
+          <div style={{ marginTop: '8px', color: tokens.textDim }}>
             The server seed hash was committed before this round. Rotate your seed to reveal
             it and verify every past round.
           </div>
