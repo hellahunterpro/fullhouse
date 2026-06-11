@@ -1,0 +1,22 @@
+# Realtime worker: Durable Object per duel over WebSocket.
+# Deployed separately from the Pages app (human-gated): npx wrangler deploy
+name = "fullhouse-realtime"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[vars]
+DEV_MODE = "false"
+
+[[durable_objects.bindings]]
+name = "DUEL"
+class_name = "DuelObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DuelObject"]
+
+# Same database as the main API worker: chips move only through the shared wallet.
+[[d1_databases]]
+binding = "DB"
+database_name = "fullhouse-db"
+database_id = "076092f0-91f0-45d1-95f3-20cba3846b0a"

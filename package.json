@@ -4,6 +4,7 @@
   "workspaces": [
     "packages/core",
     "worker",
+    "realtime",
     "web"
   ],
   "scripts": {
