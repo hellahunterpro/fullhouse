@@ -5,8 +5,8 @@
 > AI/assistant reference; strip `CLAUDE.md` and `.claude/` before the repo goes public.
 
 ## What this is
-Full House — play-money virtual-chip casino, Telegram Mini App. Current work: **Stage 0**
-(`docs/STAGE-0-PLAN.md`).
+Full House — play-money virtual-chip casino, Telegram Mini App. Stage 0
+(`docs/STAGE-0-PLAN.md`) is complete and live. Current work: **`docs/IMPROVEMENT-PLAN.md`**.
 
 ## Hard guard (non-negotiable)
 - **No real money, ever.** Chips are never purchasable (incl. Telegram Stars / TON),
@@ -15,7 +15,8 @@ Full House — play-money virtual-chip casino, Telegram Mini App. Current work: 
 - **Server-authoritative.** The server computes every outcome; never trust client values.
 
 ## Build protocol — run to completion
-Work `docs/STAGE-0-PLAN.md` top to bottom and complete EVERY task in one continuous pass.
+Work `docs/IMPROVEMENT-PLAN.md` phase by phase, in order, and complete EVERY task of the
+current phase in one continuous pass.
 After each task: run its verification, fix failures, commit (Conventional Commit, prefixed
 `[skip ci]`), push, then immediately start the next task.
 
@@ -25,8 +26,9 @@ just take extra care on the atomic wallet and the provably-fair RNG and cover bo
 thorough tests, without pausing. Keep going until all Stage 0 tasks are done and all tests
 pass — only then report.
 
-Stop before completion only if: the hard guard would be violated, or the same verification
-fails three times and you cannot fix it (report what failed, then stop).
+Stop before completion only if: the hard guard would be violated; the plan marks an explicit
+STOP point (end of Phase 2, anything in Phase 5); or the same verification fails three times
+and you cannot fix it (report what failed, then stop).
 
 ## Conventions
 - All repo-visible text in **English**. No AI fingerprint, no co-author trailers.
@@ -43,8 +45,6 @@ fails three times and you cannot fix it (report what failed, then stop).
 `npm install`; `npm run dev` (web) + Worker dev server boot; `npm run typecheck`,
 `npm run lint`, `npm test` pass; local D1 migrations apply with `--local`.
 
-## Stage 0 done =
-A playable dice game running locally end-to-end: Telegram-authed user with starting chips
-places a dice bet; server validates → RNG commit/reveal → pure resolve → atomic wallet move
-→ audit event → result with a verifiable fairness proof. Tests green, neutral English
-README, clean history. No deploy.
+## Done =
+See "Definition of improved" at the end of `docs/IMPROVEMENT-PLAN.md`. No deploys —
+release is always a human command.

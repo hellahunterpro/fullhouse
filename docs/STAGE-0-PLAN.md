@@ -1,5 +1,7 @@
 # Stage 0 — build plan
 
+Status: COMPLETED and deployed. Current work lives in `IMPROVEMENT-PLAN.md`.
+
 Goal of Stage 0: prove the core engine on the cheapest possible game (dice), with no
 Durable Objects. Spine first, game last. Each task is self-contained with a Definition
 of Done and a Verification step so progress is checkable. Tasks marked `CHECKPOINT` are
