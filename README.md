@@ -19,12 +19,15 @@ A play-money virtual-chip casino running as a Telegram Mini App. Players bet wit
 
 - **Atomic wallet** — all balance changes go through a single debit/credit function backed by D1 batch transactions; no double-spend, no negative balances
 - **Provably-fair RNG** — HMAC-SHA256 commit–reveal scheme; server seed hash published before the bet, outcome verifiable by the player
+- **Fairness sheet** — set your own client seed, rotate & reveal the server seed, and re-verify any finished round from inside the app
+- **Dark-neon design system** — original hand-drawn SVG art, CSS-token theming, animated game reveals (dice scramble, 3D coin flip, decelerating roulette wheel, staggered mines reveal) with haptic feedback and reduced-motion support
 - **Telegram auth** — `initData` signature validation with automatic user provisioning and 10,000 starting chips
-- **Daily bonus** — claim chips once per day with a streak multiplier
-- **Game history** — queryable log of all bets and outcomes
-- **Leaderboard** — top players by balance
+- **Daily bonus** — claim chips once per day with a streak multiplier and a streak card in the lobby
+- **Game history** — per-round cards with stake → payout flow and relative timestamps
+- **Leaderboard** — top players by balance with top-3 styling
 - **Structured analytics** — every auth, bet, and balance change recorded as audit events
-- **Dev mode** — automatic auth bypass for local browser testing without Telegram
+- **Performance budget** — first-load JS kept under 250 KB gzip (enforced by `npm run check:bundle`); no animation libraries, only `transform`/`opacity` animations
+- **Dev mode** — automatic auth bypass for local browser testing without Telegram; plain browsers without dev mode see an "open inside Telegram" screen
 
 ## Local development
 
@@ -111,4 +114,4 @@ Every round returns a fairness proof containing the server seed, its pre-committ
 npm test
 ```
 
-84 tests covering wallet atomicity (including parallel race conditions), RNG determinism and tamper detection, auth validation, game logic for all four games, and end-to-end round integration.
+144 tests across both workspaces: wallet atomicity (including parallel race conditions), RNG determinism and tamper detection, auth validation, game logic for all four games, end-to-end round integration, and frontend suites covering every screen, the UI kit, animation-to-outcome mapping (coin flip, roulette wheel, mines reveal), and the provably-fair UI loop.

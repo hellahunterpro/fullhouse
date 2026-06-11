@@ -129,7 +129,7 @@ export function DiceGame({ balance, onResult }: Props) {
           value={target}
           disabled={rolling}
           onChange={(e) => setTarget(parseInt(e.target.value, 10))}
-          style={{ background: trackStyle }}
+          style={{ backgroundImage: trackStyle }}
         />
         <div className="dice-direction">
           {(['under', 'over'] as const).map((d) => (

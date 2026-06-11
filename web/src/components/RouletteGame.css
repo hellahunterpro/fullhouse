@@ -111,6 +111,7 @@
 }
 
 .roulette-board {
+  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -123,7 +124,7 @@
 }
 
 .roulette-bet {
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 4px;
   border-radius: var(--radius-control);
   background: var(--bg-2);
@@ -146,12 +147,12 @@
 
 .roulette-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
   gap: 4px;
 }
 
 .roulette-num {
-  min-height: 40px;
+  min-height: 44px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 700;
@@ -161,7 +162,7 @@
 }
 
 .roulette-num--zero {
-  grid-column: span 6;
+  grid-column: 1 / -1;
 }
 
 .roulette-num--red {

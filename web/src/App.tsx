@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchMe, type UserInfo, type PlayResult, type PublicProof } from './api';
-import { tokens, initTelegram } from './theme';
-import { ScreenHeader } from './ui';
+import { initTelegram } from './theme';
+import { Button, ScreenHeader, Skeleton } from './ui';
 import { Lobby } from './components/Lobby';
 import { DiceGame } from './components/DiceGame';
 import { CoinflipGame } from './components/CoinflipGame';
@@ -10,6 +10,7 @@ import { MinesGame } from './components/MinesGame';
 import { History } from './components/History';
 import { Leaderboard } from './components/Leaderboard';
 import { FairnessSheet } from './components/FairnessSheet';
+import { TelegramGate } from './components/TelegramGate';
 import './App.css';
 
 type Screen = 'lobby' | 'dice' | 'coinflip' | 'roulette' | 'mines' | 'history' | 'leaderboard';
@@ -24,6 +25,21 @@ const SCREEN_TITLES: Record<Screen, string> = {
   leaderboard: 'Leaderboard',
 };
 
+function LobbySkeleton() {
+  return (
+    <div className="app-skeleton">
+      <Skeleton height={72} radius="var(--radius-card)" />
+      <div className="app-skeleton-grid">
+        <Skeleton height={140} radius="var(--radius-card)" />
+        <Skeleton height={140} radius="var(--radius-card)" />
+        <Skeleton height={140} radius="var(--radius-card)" />
+        <Skeleton height={140} radius="var(--radius-card)" />
+      </div>
+      <Skeleton height={52} radius="var(--radius-card)" />
+    </div>
+  );
+}
+
 export function App() {
   const [me, setMe] = useState<UserInfo | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
@@ -33,8 +49,9 @@ export function App() {
   const [lastProof, setLastProof] = useState<PublicProof | null>(null);
   const [fairnessOpen, setFairnessOpen] = useState(false);
 
-  useEffect(() => {
-    initTelegram();
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
     fetchMe()
       .then((data) => {
         setMe(data);
@@ -42,16 +59,27 @@ export function App() {
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : 'Failed to connect');
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    initTelegram();
+    load();
+  }, [load]);
 
   const handleResult = useCallback((res: PlayResult) => {
     setBalance(res.balanceAfter);
     setLastProof(res.proof);
   }, []);
   const handleBalanceDelta = useCallback((d: number) => setBalance((b) => (b ?? 0) + d), []);
+
+  // Auth failed and we are not inside Telegram: this is the plain-browser case.
+  const hasInitData = Boolean(window.Telegram?.WebApp?.initData);
+  if (error && !hasInitData) {
+    return <TelegramGate />;
+  }
 
   const renderScreen = () => {
     if (balance === null || me === null) return null;
@@ -85,12 +113,15 @@ export function App() {
         onBack={screen !== 'lobby' ? () => setScreen('lobby') : undefined}
       />
 
-      {loading && <div style={{ textAlign: 'center', padding: '60px 20px', color: tokens.textDim }}>Loading...</div>}
+      {loading && <LobbySkeleton />}
 
       {error && (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ color: tokens.danger, marginBottom: '8px' }}>Failed to connect</div>
-          <div style={{ color: tokens.textDim, fontSize: '14px' }}>{error}</div>
+        <div className="app-error">
+          <div className="app-error-title">Connection trouble</div>
+          <div className="app-error-text">{error}</div>
+          <Button variant="ghost" onClick={load}>
+            Try again
+          </Button>
         </div>
       )}
 

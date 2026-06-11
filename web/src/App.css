@@ -3,3 +3,37 @@
   background: var(--bg-0);
   color: var(--text);
 }
+
+.app-skeleton {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.app-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.app-error-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.app-error-text {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}

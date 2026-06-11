@@ -25,7 +25,7 @@
 
 .stake-mod {
   min-width: 44px;
-  min-height: 32px;
+  min-height: 44px;
   padding: 4px 10px;
   border-radius: var(--radius-control);
   background: var(--bg-2);
@@ -59,7 +59,7 @@
 
 .stake-preset {
   flex: 1;
-  min-height: 36px;
+  min-height: 44px;
   padding: 8px 4px;
   border-radius: var(--radius-control);
   border: 1px solid var(--line);

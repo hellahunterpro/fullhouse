@@ -13,7 +13,8 @@
     "lint": "eslint --no-error-on-unmatched-pattern . --ext .ts,.tsx",
     "format": "prettier --check .",
     "test": "npm run test --workspaces --if-present",
-    "build": "npm run build --workspace web && npm run bundle:worker",
+    "build": "npm run build --workspace web && npm run bundle:worker && npm run check:bundle",
+    "check:bundle": "node scripts/check-bundle.mjs",
     "deploy": "npm run build --workspace web && (cd worker && npx wrangler deploy)",
     "bundle:worker": "node scripts/gen-bootstrap.mjs && esbuild worker/src/index.ts --bundle --format=esm --target=es2022 --outfile=web/dist/_worker.js --log-level=warning"
   },

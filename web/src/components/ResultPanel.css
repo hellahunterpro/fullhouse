@@ -45,6 +45,7 @@
 }
 
 .result-panel-proof-toggle {
+  min-height: 44px;
   font-size: 13px;
   color: var(--text-dim);
   text-decoration: underline;
