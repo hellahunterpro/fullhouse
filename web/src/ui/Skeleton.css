@@ -1,0 +1,15 @@
+.ui-skeleton {
+  background: var(--bg-2);
+  border-radius: var(--radius-control);
+  animation: ui-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ui-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}

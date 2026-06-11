@@ -1,0 +1,68 @@
+.ui-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 12px 20px;
+  border-radius: var(--radius-control);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  transition:
+    transform 150ms ease-out,
+    opacity 150ms ease-out;
+  user-select: none;
+}
+
+.ui-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ui-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ui-btn--block {
+  display: flex;
+  width: 100%;
+}
+
+.ui-btn--primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-partner));
+  color: #06230f;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.ui-btn--ghost {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.ui-btn--danger {
+  background: linear-gradient(135deg, var(--danger), #d63c3c);
+  color: #2b0707;
+  box-shadow: 0 4px 16px rgba(255, 92, 92, 0.3);
+}
+
+.ui-btn--loading .ui-btn-label {
+  opacity: 0.7;
+}
+
+.ui-btn-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: ui-btn-spin 700ms linear infinite;
+}
+
+@keyframes ui-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

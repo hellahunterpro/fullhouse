@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchMe, claimDailyBonus } from './api';
 import { tokens, initTelegram } from './theme';
+import { Button, ScreenHeader, useToast } from './ui';
 import { DiceGame } from './components/DiceGame';
 import { CoinflipGame } from './components/CoinflipGame';
 import { RouletteGame } from './components/RouletteGame';
@@ -18,14 +19,24 @@ const GAMES = [
   { id: 'mines' as Screen, name: 'Mines', desc: 'Avoid the hidden mines', icon: '💣' },
 ];
 
+const SCREEN_TITLES: Record<Screen, string> = {
+  lobby: 'Full House',
+  dice: 'Dice',
+  coinflip: 'Coin Flip',
+  roulette: 'Roulette',
+  mines: 'Mines',
+  history: 'History',
+  leaderboard: 'Leaderboard',
+};
+
 export function App() {
   const [balance, setBalance] = useState<number | null>(null);
   const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [screen, setScreen] = useState<Screen>('lobby');
-  const [bonusMsg, setBonusMsg] = useState<string | null>(null);
   const [commitment, setCommitment] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     initTelegram();
@@ -39,16 +50,14 @@ export function App() {
       const result = await claimDailyBonus();
       if (result.awarded) {
         setBalance((b) => (b ?? 0) + result.amount);
-        setBonusMsg(`+${result.amount} chips! Streak: ${result.streak} day${result.streak > 1 ? 's' : ''}`);
+        toast(`+${result.amount.toLocaleString()} chips! Streak: ${result.streak} day${result.streak > 1 ? 's' : ''}`, 'success');
       } else {
-        setBonusMsg('Already claimed today!');
+        toast('Already claimed today!');
       }
-      setTimeout(() => setBonusMsg(null), 3000);
     } catch {
-      setBonusMsg('Failed to claim bonus');
-      setTimeout(() => setBonusMsg(null), 3000);
+      toast('Failed to claim bonus', 'error');
     }
-  }, []);
+  }, [toast]);
 
   const handleBalanceUpdate = useCallback((b: number) => setBalance(b), []);
 
@@ -67,25 +76,11 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="app-header-left">
-          {screen !== 'lobby' && (
-            <button className="app-header-back" onClick={() => setScreen('lobby')} aria-label="Back">
-              ←
-            </button>
-          )}
-          <div className="app-header-title">Full House</div>
-        </div>
-        {balance !== null && (
-          <div className="balance-pill">{balance.toLocaleString()}</div>
-        )}
-      </header>
-
-      {bonusMsg && (
-        <div style={{ background: tokens.bg1, padding: '12px', textAlign: 'center', color: tokens.accent, fontWeight: 'bold' }}>
-          {bonusMsg}
-        </div>
-      )}
+      <ScreenHeader
+        title={SCREEN_TITLES[screen]}
+        balance={balance}
+        onBack={screen !== 'lobby' ? () => setScreen('lobby') : undefined}
+      />
 
       {loading && <div style={{ textAlign: 'center', padding: '60px 20px', color: tokens.textDim }}>Loading...</div>}
 
@@ -100,10 +95,7 @@ export function App() {
         <div style={{ padding: '16px' }}>
           <div style={{ marginBottom: '16px', color: tokens.textDim, fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Welcome, {username}</span>
-            <button onClick={handleDailyBonus}
-              style={{ background: tokens.accent, border: 'none', color: '#062512', padding: '10px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
-              Daily Bonus
-            </button>
+            <Button onClick={handleDailyBonus}>Daily Bonus</Button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
@@ -121,14 +113,8 @@ export function App() {
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={() => setScreen('history')}
-              style={{ flex: 1, background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '14px', border: `1px solid ${tokens.line}`, cursor: 'pointer', color: tokens.text, fontSize: '15px', fontWeight: 'bold' }}>
-              History
-            </button>
-            <button onClick={() => setScreen('leaderboard')}
-              style={{ flex: 1, background: tokens.bg1, borderRadius: tokens.radiusCard, padding: '14px', border: `1px solid ${tokens.line}`, cursor: 'pointer', color: tokens.text, fontSize: '15px', fontWeight: 'bold' }}>
-              Leaderboard
-            </button>
+            <Button variant="ghost" block onClick={() => setScreen('history')}>History</Button>
+            <Button variant="ghost" block onClick={() => setScreen('leaderboard')}>Leaderboard</Button>
           </div>
 
           {commitment && (
