@@ -174,8 +174,12 @@ export class DuelObject implements DurableObject {
       if (!duel) return;
       if (duel.state === 'created') {
         await this.cancelDuel(duel, 'Duel expired before an opponent joined');
-      } else if (duel.state === 'joined' || duel.state === 'committed') {
+      } else if (duel.state === 'joined') {
         await this.cancelDuel(duel, 'Duel timed out');
+      } else if (duel.state === 'committed') {
+        // Stakes are locked and both seeds are fixed, so the outcome is fully
+        // determined: recover an interrupted resolution instead of refunding.
+        await this.resolveRound(duel);
       } else if (duel.state === 'resolved') {
         for (const ws of this.state.getWebSockets()) {
           ws.close(1000, 'duel closed');
