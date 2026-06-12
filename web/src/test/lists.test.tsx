@@ -10,6 +10,7 @@ const leaderboardMock = vi.fn();
 vi.mock('../api', () => ({
   fetchHistory: () => historyMock(),
   fetchLeaderboard: () => leaderboardMock(),
+  fetchDuels: () => Promise.resolve({ duels: [] }),
 }));
 
 afterEach(() => cleanup());

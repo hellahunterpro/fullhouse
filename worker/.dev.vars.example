@@ -3,3 +3,6 @@
 # Never enable DEV_MODE in a deployed build.
 DEV_MODE=true
 BOT_TOKEN=dev-bot-token
+# Duel links + realtime worker endpoint for local two-client testing.
+BOT_USERNAME=your_dev_bot
+REALTIME_URL=ws://localhost:8789

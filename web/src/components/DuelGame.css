@@ -1,0 +1,297 @@
+.duel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.duel-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.duel-setup-label {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.duel-game-choice {
+  display: flex;
+  gap: 12px;
+}
+
+.duel-game-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  transition:
+    transform 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.duel-game-card:active {
+  transform: scale(0.96);
+}
+
+.duel-game-card--active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.duel-hint {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding: 0 4px;
+}
+
+.duel-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.duel-notice-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.duel-notice-text {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.duel-arena {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.duel-versus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.duel-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  min-width: 0;
+}
+
+.duel-side--winner {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.duel-side-name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.duel-side-role {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.duel-vs {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+.duel-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 150px;
+}
+
+.duel-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-dim);
+  font-size: 14px;
+  text-align: center;
+}
+
+.duel-waiting-sub {
+  font-size: 12px;
+}
+
+.duel-waiting-pulse {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: duel-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes duel-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.duel-countdown {
+  font-size: 64px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  animation: duel-count-in 800ms ease-out infinite;
+}
+
+@keyframes duel-count-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.9;
+  }
+}
+
+.duel-coin-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  perspective: 600px;
+}
+
+.duel-coin {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.16, 0.7, 0.3, 1);
+}
+
+.duel-coin-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.duel-coin-face--back {
+  transform: rotateX(180deg);
+}
+
+.duel-coin-legend {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.duel-dice-stage {
+  display: flex;
+  gap: 24px;
+}
+
+.duel-dice-roll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.duel-dice-num {
+  font-size: 44px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.duel-dice-owner {
+  font-size: 12px;
+  color: var(--text-dim);
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.duel-result {
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.duel-result--win {
+  color: var(--accent);
+}
+
+.duel-result--lose {
+  color: var(--danger);
+}
+
+.duel-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.duel-meta-stake {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.duel-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.duel-proof-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}

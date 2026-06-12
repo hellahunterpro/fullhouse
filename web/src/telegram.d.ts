@@ -21,6 +21,8 @@ interface TelegramWebApp {
   HapticFeedback?: TelegramHapticFeedback;
   ready(): void;
   expand(): void;
+  openTelegramLink?(url: string): void;
+  openLink?(url: string): void;
 }
 
 interface Window {

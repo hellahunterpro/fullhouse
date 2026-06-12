@@ -7,6 +7,16 @@ function getInitData(): string {
   return '';
 }
 
+/** Local two-client testing: ?as=2 in the URL acts as a second dev identity. */
+export function getDevUserId(): string | null {
+  if (typeof window === 'undefined' || window.Telegram?.WebApp?.initData) return null;
+  try {
+    return new URLSearchParams(window.location.search).get('as');
+  } catch {
+    return null;
+  }
+}
+
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const initData = getInitData();
   const headers: Record<string, string> = {
@@ -14,6 +24,8 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
     ...opts.headers as Record<string, string>,
   };
   if (initData) headers['X-Init-Data'] = initData;
+  const devUser = getDevUserId();
+  if (devUser) headers['X-Dev-User'] = devUser;
 
   const res = await fetch(`${API_BASE}${path}`, { ...opts, headers });
   const data = await res.json();
@@ -32,6 +44,7 @@ export interface UserInfo {
   balance: number;
   fairness: Commitment;
   dailyBonus: { available: boolean; streak: number };
+  realtimeUrl: string;
 }
 
 export interface PublicProof {
@@ -116,3 +129,35 @@ export function play(
     body: JSON.stringify({ gameId, bet, clientSeed }),
   });
 }
+
+export type DuelGame = 'coinflip' | 'dice';
+
+export interface CreatedDuel {
+  duelId: string;
+  game: DuelGame;
+  stake: number;
+  shareLink: string;
+  realtimeUrl: string;
+}
+
+export interface DuelSummary {
+  duelId: string;
+  game: string;
+  stake: number;
+  state: string;
+  round: number;
+  creatorName: string | null;
+  opponentName: string | null;
+  winnerId: string | null;
+  won: boolean | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export const createDuel = (game: DuelGame, stake: number) =>
+  request<CreatedDuel>('/duel/create', {
+    method: 'POST',
+    body: JSON.stringify({ game, stake }),
+  });
+
+export const fetchDuels = () => request<{ duels: DuelSummary[] }>('/duels');

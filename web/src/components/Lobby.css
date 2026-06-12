@@ -87,6 +87,68 @@
   border: none;
 }
 
+.duel-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  transition:
+    transform 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.duel-cta:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .duel-cta:hover {
+    border-color: rgba(43, 217, 107, 0.35);
+  }
+}
+
+.duel-cta-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.duel-cta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.duel-cta-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.duel-cta-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.duel-cta-arrow {
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 700;
+}
+
 .games-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

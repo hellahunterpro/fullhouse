@@ -19,7 +19,7 @@ interface Props {
   commitment: string | null;
   bonusAvailable: boolean;
   bonusStreak: number;
-  onNavigate: (screen: GameScreen | 'history' | 'leaderboard') => void;
+  onNavigate: (screen: GameScreen | 'history' | 'leaderboard' | 'duel') => void;
   onBalanceDelta: (amount: number) => void;
   onOpenFairness?: () => void;
 }
@@ -85,6 +85,26 @@ export function Lobby({
         <span className="bonus-card-action">
           {claiming ? '…' : available ? 'Claim' : '✓'}
         </span>
+      </button>
+
+      <button
+        className="duel-cta"
+        onClick={() => {
+          hapticImpact('light');
+          onNavigate('duel');
+        }}
+      >
+        <span className="duel-cta-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28">
+            <path d="M6 26L23 9M23 9v6M23 9h-6" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path d="M26 26L9 9M9 9v6M9 9h6" stroke="var(--gold)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+        </span>
+        <span className="duel-cta-text">
+          <span className="duel-cta-title">Challenge a friend</span>
+          <span className="duel-cta-sub">Live duel — winner takes both stakes</span>
+        </span>
+        <span className="duel-cta-arrow" aria-hidden="true">→</span>
       </button>
 
       <div className="games-grid">

@@ -17,12 +17,15 @@ vi.mock('../api', () => ({
       balance: 5000,
       fairness: { id: 'c1', seedHash: 'a'.repeat(64), nonce: 0 },
       dailyBonus: { available: true, streak: 2 },
+      realtimeUrl: '',
     }),
   ),
   claimDailyBonus: vi.fn(() =>
     Promise.resolve({ awarded: true, amount: 1000, streak: 1, nextAvailable: '' }),
   ),
   fetchHistory: vi.fn(() => Promise.resolve({ history: [] })),
+  fetchDuels: vi.fn(() => Promise.resolve({ duels: [] })),
+  getDevUserId: vi.fn(() => null),
   fetchLeaderboard: vi.fn(() => Promise.resolve({ leaderboard: [] })),
   play: vi.fn(),
 }));

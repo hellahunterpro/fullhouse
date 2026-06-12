@@ -8,9 +8,10 @@
     "web"
   ],
   "scripts": {
-    "dev": "concurrently -n web,api -c cyan,yellow \"npm run dev --workspace=web\" \"npm run dev --workspace=worker\"",
+    "dev": "concurrently -n web,api,rt -c cyan,yellow,magenta \"npm run dev --workspace=web\" \"npm run dev --workspace=worker\" \"npm run dev --workspace=realtime\"",
     "dev:web": "npm run dev --workspace=web",
     "dev:worker": "npm run dev --workspace=worker",
+    "dev:realtime": "npm run dev --workspace=realtime",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint --no-error-on-unmatched-pattern . --ext .ts,.tsx",
     "format": "prettier --check .",

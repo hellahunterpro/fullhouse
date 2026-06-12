@@ -42,7 +42,7 @@ function corsHeaders(): HeadersInit {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Init-Data',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Init-Data, X-Dev-User',
   };
 }
 
@@ -54,7 +54,13 @@ async function authFromRequest(db: D1Database, request: Request, env: Env): Prom
   const initData = request.headers.get('X-Init-Data');
 
   if (!initData && env.DEV_MODE === 'true') {
-    return provisionUser(db, { id: 1, username: 'dev_player', first_name: 'Dev' });
+    // X-Dev-User lets local two-client tests act as distinct identities.
+    const devId = parseInt(request.headers.get('X-Dev-User') ?? '1', 10) || 1;
+    return provisionUser(db, {
+      id: devId,
+      username: devId === 1 ? 'dev_player' : `dev_player_${devId}`,
+      first_name: devId === 1 ? 'Dev' : `Dev${devId}`,
+    });
   }
 
   if (!initData) throw new Error('Missing X-Init-Data header');

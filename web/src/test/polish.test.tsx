@@ -11,6 +11,8 @@ vi.mock('../api', () => ({
   claimDailyBonus: vi.fn(),
   rotateFairness: vi.fn(),
   verifyRound: vi.fn(),
+  fetchDuels: vi.fn(() => Promise.resolve({ duels: [] })),
+  getDevUserId: vi.fn(() => null),
 }));
 
 afterEach(() => cleanup());

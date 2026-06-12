@@ -7,13 +7,14 @@ import { DiceGame } from './components/DiceGame';
 import { CoinflipGame } from './components/CoinflipGame';
 import { RouletteGame } from './components/RouletteGame';
 import { MinesGame } from './components/MinesGame';
+import { DuelGame } from './components/DuelGame';
 import { History } from './components/History';
 import { Leaderboard } from './components/Leaderboard';
 import { FairnessSheet } from './components/FairnessSheet';
 import { TelegramGate } from './components/TelegramGate';
 import './App.css';
 
-type Screen = 'lobby' | 'dice' | 'coinflip' | 'roulette' | 'mines' | 'history' | 'leaderboard';
+type Screen = 'lobby' | 'dice' | 'coinflip' | 'roulette' | 'mines' | 'duel' | 'history' | 'leaderboard';
 
 const SCREEN_TITLES: Record<Screen, string> = {
   lobby: 'Full House',
@@ -21,9 +22,21 @@ const SCREEN_TITLES: Record<Screen, string> = {
   coinflip: 'Coin Flip',
   roulette: 'Roulette',
   mines: 'Mines',
+  duel: 'Duel',
   history: 'History',
   leaderboard: 'Leaderboard',
 };
+
+/** Duel id from a startapp deep link (or ?duel= during local dev). */
+function deepLinkDuelId(): string | null {
+  const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+  if (startParam?.startsWith('duel_')) return startParam.slice(5);
+  try {
+    return new URLSearchParams(window.location.search).get('duel');
+  } catch {
+    return null;
+  }
+}
 
 function LobbySkeleton() {
   return (
@@ -45,7 +58,8 @@ export function App() {
   const [balance, setBalance] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [screen, setScreen] = useState<Screen>('lobby');
+  const [joinDuelId] = useState<string | null>(() => deepLinkDuelId());
+  const [screen, setScreen] = useState<Screen>(joinDuelId ? 'duel' : 'lobby');
   const [lastProof, setLastProof] = useState<PublicProof | null>(null);
   const [fairnessOpen, setFairnessOpen] = useState(false);
 
@@ -74,12 +88,19 @@ export function App() {
     setLastProof(res.proof);
   }, []);
   const handleBalanceDelta = useCallback((d: number) => setBalance((b) => (b ?? 0) + d), []);
+  const refreshBalance = useCallback(() => {
+    fetchMe()
+      .then((data) => setBalance(data.balance))
+      .catch(() => {});
+  }, []);
 
   // Auth failed and we are not inside Telegram: this is the plain-browser case.
   const hasInitData = Boolean(window.Telegram?.WebApp?.initData);
   if (error && !hasInitData) {
     return <TelegramGate />;
   }
+
+  const realtimeUrl = me?.realtimeUrl || (import.meta.env.DEV ? 'ws://localhost:8789' : '');
 
   const renderScreen = () => {
     if (balance === null || me === null) return null;
@@ -100,6 +121,15 @@ export function App() {
       case 'coinflip': return <CoinflipGame balance={balance} onResult={handleResult} />;
       case 'roulette': return <RouletteGame balance={balance} onResult={handleResult} />;
       case 'mines': return <MinesGame balance={balance} onResult={handleResult} />;
+      case 'duel':
+        return (
+          <DuelGame
+            balance={balance}
+            realtimeUrl={realtimeUrl}
+            joinDuelId={joinDuelId}
+            onBalanceRefresh={refreshBalance}
+          />
+        );
       case 'history': return <History />;
       case 'leaderboard': return <Leaderboard />;
     }

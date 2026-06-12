@@ -14,6 +14,7 @@ A play-money virtual-chip casino running as a Telegram Mini App. Players bet wit
 - **Coin Flip** — 50/50 heads or tails at 1.98x payout
 - **Roulette** — European roulette (0–36) with straight, color, parity, range, and dozen bets
 - **Mines** — pick tiles on a 5x5 grid, avoid hidden mines; more picks = higher multiplier
+- **P2P Duels** — challenge a friend over a Telegram share link to a live coinflip or dice duel; winner takes both stakes, with one-tap rematch (see `docs/DUEL-LOCAL-TESTING.md`)
 
 ## Features
 
@@ -99,6 +100,12 @@ Dev mode is enabled by default in `wrangler.toml` (`DEV_MODE = "true"`), which b
 | `GET` | `/api/history` | Get bet history |
 | `GET` | `/api/leaderboard` | Get top players |
 | `POST` | `/api/daily-bonus` | Claim daily bonus chips |
+| `POST` | `/api/duel/create` | Create a duel challenge (returns share link) |
+| `GET` | `/api/duels` | List your duels for history |
+
+The realtime worker (`realtime/`) exposes `wss://…/ws?duel=<id>` — one Durable Object
+per duel orchestrating join/commit/resolve/rematch over WebSocket; all chip movement
+still goes through the shared wallet against the same D1 database.
 
 ## Provably-fair verification
 
