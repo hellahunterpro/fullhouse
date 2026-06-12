@@ -10,6 +10,13 @@ directory = "../web/dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
+# Duel share links and the realtime worker endpoint. BOT_USERNAME is the bot
+# that hosts the Mini App; REALTIME_URL is the deployed realtime worker
+# (wss://…). Local dev values live in .dev.vars.
+[vars]
+BOT_USERNAME = ""
+REALTIME_URL = ""
+
 # Remote database: replace database_id with the value printed by
 #   npx wrangler d1 create fullhouse-db
 # DEV_MODE is intentionally absent here so deployed builds always verify Telegram

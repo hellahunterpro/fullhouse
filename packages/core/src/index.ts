@@ -45,4 +45,16 @@ export {
   trackBetPlaced,
   trackBetResolved,
   trackBalanceDelta,
+  trackDuelCreated,
+  trackDuelJoined,
+  trackDuelResolved,
+  trackDuelRematch,
 } from './analytics.js';
+export {
+  resolveDuelOutcome,
+  DUEL_GAMES,
+  DUEL_MIN_STAKE,
+  DUEL_MAX_STAKE,
+  type DuelGame,
+  type DuelResolution,
+} from './duel.js';

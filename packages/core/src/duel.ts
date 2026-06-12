@@ -1,8 +1,8 @@
 export type DuelGame = 'coinflip' | 'dice';
 
 export const DUEL_GAMES: DuelGame[] = ['coinflip', 'dice'];
-export const MIN_STAKE = 1;
-export const MAX_STAKE = 1_000_000;
+export const DUEL_MIN_STAKE = 1;
+export const DUEL_MAX_STAKE = 1_000_000;
 
 export interface DuelResolution {
   winnerIdx: 0 | 1;

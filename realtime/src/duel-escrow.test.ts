@@ -264,6 +264,38 @@ describe('duel escrow & settlement', () => {
     b.ws.close();
   });
 
+  it('hydrates an API-created duel: opponent can join before the creator connects', async () => {
+    const duelId = 'escrow-hydrate-1';
+    // Provision the creator (via a connection that immediately closes) so the
+    // duels row can reference them — mirroring the API create flow.
+    const tmp = await connect('escrow-hydrate-warmup', 2012, 'api_creator');
+    tmp.ws.close();
+    await db
+      .prepare(
+        `INSERT INTO duels (id, creator_id, game, stake, state, round) VALUES (?, ?, 'coinflip', 700, 'created', 0)`,
+      )
+      .bind(duelId, tmp.userId)
+      .run();
+
+    // The opponent arrives first via the share link — no create message ever sent.
+    const b = await connect(duelId, 2013, 'link_joiner');
+    const snapshot = await b.inbox.next((m) => m.type === 'duel_state');
+    expect(snapshot.state).toBe('created');
+    expect(snapshot.stake).toBe(700);
+    expect(snapshot.seedHash).toBeTruthy();
+
+    b.ws.send(JSON.stringify({ type: 'join' }));
+    const joined = await b.inbox.next((m) => m.type === 'duel_state' && m.state === 'joined');
+    expect((joined.creator as { name: string }).name).toBe('api_creator');
+
+    // A non-creator cannot hijack the duel config with a create message.
+    b.ws.send(JSON.stringify({ type: 'create', duelId, game: 'dice', stake: 1 }));
+    const err = await b.inbox.next((m) => m.type === 'error');
+    expect(err.error).toContain('already exists');
+
+    b.ws.close();
+  });
+
   it('rematch with insufficient funds cancels and refunds the player already locked', async () => {
     const duelId = 'escrow-broke-rematch';
     const a = await connect(duelId, 2010, 'rich');

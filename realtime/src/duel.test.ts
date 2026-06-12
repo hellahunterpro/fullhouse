@@ -5,7 +5,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { createValidInitData } from '@fullhouse/core/test-helpers';
 import { verify } from '@fullhouse/core';
-import { resolveDuelOutcome } from './duel-logic.js';
+import { resolveDuelOutcome } from '@fullhouse/core';
 
 const BOT_TOKEN = 'test-bot-token:AABBCCDD';
 

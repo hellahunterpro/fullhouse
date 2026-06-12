@@ -19,12 +19,18 @@ import { playRound } from './services/round.js';
 import { getHistory } from './services/history.js';
 import { getLeaderboard } from './services/leaderboard.js';
 import { claimDailyBonus, getDailyBonusStatus } from './services/daily-bonus.js';
+import { createDuel, listDuels } from './services/duel.js';
+import type { DuelGame } from '@fullhouse/core';
 
 export interface Env {
   DB: D1Database;
   BOT_TOKEN: string;
   DEV_MODE?: string;
   ASSETS: Fetcher;
+  /** Telegram bot username used to build duel share links. */
+  BOT_USERNAME?: string;
+  /** Public WebSocket URL of the realtime worker. */
+  REALTIME_URL?: string;
 }
 
 registerGame(diceGame);
@@ -88,6 +94,7 @@ export default {
           balance,
           fairness,
           dailyBonus,
+          realtimeUrl: env.REALTIME_URL ?? '',
         });
       }
 
@@ -143,6 +150,24 @@ export default {
         const user = await authFromRequest(env.DB, request, env);
         const result = await claimDailyBonus(env.DB, user.id, user.walletId);
         return json(result);
+      }
+
+      if (url.pathname === '/api/duel/create' && request.method === 'POST') {
+        const user = await authFromRequest(env.DB, request, env);
+        const body = await request.json<{ game: DuelGame; stake: number }>();
+        const duel = await createDuel(
+          env.DB,
+          { id: user.id, walletId: user.walletId },
+          { game: body.game, stake: body.stake },
+          env.BOT_USERNAME ?? '',
+        );
+        return json({ ...duel, realtimeUrl: env.REALTIME_URL ?? '' });
+      }
+
+      if (url.pathname === '/api/duels' && request.method === 'GET') {
+        const user = await authFromRequest(env.DB, request, env);
+        const duels = await listDuels(env.DB, user.id);
+        return json({ duels });
       }
 
       if (url.pathname.startsWith('/api/')) {

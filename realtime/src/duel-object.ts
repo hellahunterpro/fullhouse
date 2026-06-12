@@ -7,14 +7,15 @@ import {
   reveal,
   DuplicateTransactionError,
   InsufficientFundsError,
-} from '@fullhouse/core';
-import {
+  trackDuelJoined,
+  trackDuelResolved,
+  trackDuelRematch,
   resolveDuelOutcome,
   DUEL_GAMES,
-  MIN_STAKE,
-  MAX_STAKE,
+  DUEL_MIN_STAKE,
+  DUEL_MAX_STAKE,
   type DuelGame,
-} from './duel-logic.js';
+} from '@fullhouse/core';
 import type { Env } from './index.js';
 
 interface PeerInfo {
@@ -214,8 +215,8 @@ export class DuelObject implements DurableObject {
       this.send(ws, { type: 'error', error: 'Unknown duel game' });
       return;
     }
-    if (!Number.isInteger(stake) || stake < MIN_STAKE || stake > MAX_STAKE) {
-      this.send(ws, { type: 'error', error: `Stake must be an integer between ${MIN_STAKE} and ${MAX_STAKE}` });
+    if (!Number.isInteger(stake) || stake < DUEL_MIN_STAKE || stake > DUEL_MAX_STAKE) {
+      this.send(ws, { type: 'error', error: `Stake must be an integer between ${DUEL_MIN_STAKE} and ${DUEL_MAX_STAKE}` });
       return;
     }
     if (!duelId) {
@@ -297,6 +298,7 @@ export class DuelObject implements DurableObject {
       .run();
     await this.saveDuel(duel);
     await this.state.storage.setAlarm(Date.now() + this.timeoutMs);
+    await trackDuelJoined(this.env.DB, peer.userId, duel.id);
     this.broadcast(this.stateMessage(duel));
   }
 
@@ -375,6 +377,7 @@ export class DuelObject implements DurableObject {
     duel.rematchVotes = {};
     duel.locked = [];
     duel.winnerId = null;
+    await trackDuelRematch(this.env.DB, peer.userId, duel.id, duel.round);
 
     if (!duel.seeds[duel.round]) {
       // Defensive: the next seed is normally pre-committed at resolve time.
@@ -474,6 +477,9 @@ export class DuelObject implements DurableObject {
       .run();
     await this.saveDuel(duel);
 
+    const loser = players[resolution.winnerIdx === 0 ? 1 : 0];
+    await trackDuelResolved(this.env.DB, winner.userId, duel.id, duel.round, payout, loser.userId);
+
     this.broadcast({
       type: 'resolved',
       duelId: duel.id,
@@ -544,8 +550,58 @@ export class DuelObject implements DurableObject {
       this.duelCache = stored;
       return stored;
     }
-    void duelId; // hydration from the D1 row happens via the create flow (API pre-creates)
-    return null;
+    if (!duelId) return null;
+
+    // First contact with this DO for an API-created duel: hydrate the config
+    // from the D1 row (authoritative) and commit the round-0 server seed.
+    const row = await this.env.DB.prepare(
+      `SELECT d.id, d.creator_id, d.game, d.stake, d.state,
+              u.username, u.first_name, w.id AS wallet_id
+       FROM duels d
+       JOIN users u ON u.id = d.creator_id
+       JOIN wallets w ON w.user_id = u.id
+       WHERE d.id = ?`,
+    )
+      .bind(duelId)
+      .first<{
+        id: string;
+        creator_id: string;
+        game: string;
+        stake: number;
+        state: string;
+        username: string | null;
+        first_name: string | null;
+        wallet_id: string;
+      }>();
+    if (!row || row.state !== 'created') return null;
+
+    const seed = await generateServerSeed();
+    const { serverSeedHash } = await commitSeed(seed);
+    const duel: DuelData = {
+      id: row.id,
+      game: row.game as DuelGame,
+      stake: row.stake,
+      state: 'created',
+      round: 0,
+      creator: {
+        userId: row.creator_id,
+        walletId: row.wallet_id,
+        name: row.username || row.first_name || 'Player',
+      },
+      opponent: null,
+      seeds: { 0: seed },
+      seedHashes: { 0: serverSeedHash },
+      commits: {},
+      locked: [],
+      rematchVotes: {},
+      winnerId: null,
+    };
+    await this.env.DB.prepare('UPDATE duels SET server_seed_hash = ? WHERE id = ?')
+      .bind(serverSeedHash, row.id)
+      .run();
+    await this.saveDuel(duel);
+    await this.state.storage.setAlarm(Date.now() + this.timeoutMs);
+    return duel;
   }
 
   private async saveDuel(duel: DuelData): Promise<void> {
